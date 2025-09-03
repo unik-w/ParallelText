@@ -69,6 +69,4 @@ def load_epub(path: str) -> Book:
         chap_title = h.get_text(strip=True) if h else "Chapter"
         chapters.append(Chapter(title=chap_title, html=html))
 
-    return Book(
-        language=lang or "", title=title, authors=authors, chapters=chapters
-    )
+    return Book(language=lang or "", title=title, authors=authors, chapters=chapters)

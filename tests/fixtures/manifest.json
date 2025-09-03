@@ -1,0 +1,564 @@
+{
+  "source": {
+    "en_epub": "/home/wslaniakea/git/langpub/tests/data/The_Trial_full.epub",
+    "de_epub": "/home/wslaniakea/git/langpub/tests/data/Der_Prozess_full.epub"
+  },
+  "keep_n": 10,
+  "min_chars": 380,
+  "outputs": {
+    "en_epub": "/home/wslaniakea/git/langpub/tests/fixtures/en.epub",
+    "de_epub": "/home/wslaniakea/git/langpub/tests/fixtures/de.epub"
+  },
+  "pairs": [
+    {
+      "index": 0,
+      "en": {
+        "file": "01.xhtml",
+        "title": "Chapter One",
+        "src_href": "2879777922207469885_7849-h-2.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter One Arrest—Conversation with Mrs. Grubach—Then Miss Bürstner Someone must have "
+      },
+      "de": {
+        "file": "01.xhtml",
+        "title": "ERSTES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-1.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] ERSTES KAPITEL VERHAFTUNG · GESPRÄCH MIT FRAU GRUBACH · DANN FRÄULEIN BÜRSTNER Jemand mußte Josef K. verleumdet haben, denn ohne daß er etw"
+      }
+    },
+    {
+      "index": 1,
+      "en": {
+        "file": "02.xhtml",
+        "title": "Chapter Two",
+        "src_href": "2879777922207469885_7849-h-3.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter Two First Cross-examination K. was informed by telephone that there would be a "
+      },
+      "de": {
+        "file": "02.xhtml",
+        "title": "ZWEITES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-2.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] ZWEITES KAPITEL ERSTE UNTERSUCHUNG K. war telephonisch verständigt worden, daß am nächsten Sonntag eine kleine Untersuchung in seiner Angele"
+      }
+    },
+    {
+      "index": 2,
+      "en": {
+        "file": "03.xhtml",
+        "title": "Chapter Three",
+        "src_href": "2879777922207469885_7849-h-4.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter Three In the empty Courtroom—The Student—The Offices Every day over the followi"
+      },
+      "de": {
+        "file": "03.xhtml",
+        "title": "DRITTES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-3.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] DRITTES KAPITEL IM LEEREN SITZUNGSSAAL · DER STUDENT · DIE KANZLEIEN K. wartete während der nächsten Woche von Tag zu Tag auf eine neuerlich"
+      }
+    },
+    {
+      "index": 3,
+      "en": {
+        "file": "04.xhtml",
+        "title": "Chapter Four",
+        "src_href": "2879777922207469885_7849-h-5.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter Four Miss Bürstner's Friend For some time after this, K. found it impossible to"
+      },
+      "de": {
+        "file": "04.xhtml",
+        "title": "VIERTES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-4.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] VIERTES KAPITEL DIE FREUNDIN DES FRÄULEIN BÜRSTNER In der nächsten Zeit war es K. unmöglich, mit Fräulein Bürstner auch nur einige wenige Wo"
+      }
+    },
+    {
+      "index": 4,
+      "en": {
+        "file": "05.xhtml",
+        "title": "Chapter Five",
+        "src_href": "2879777922207469885_7849-h-6.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter Five The whip-man One evening, a few days later, K. was walking along one of th"
+      },
+      "de": {
+        "file": "05.xhtml",
+        "title": "FÜNFTES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-5.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] FÜNFTES KAPITEL DER PRÜGLER Als K. an einem der nächsten Abende den Korridor passierte, der sein Bureau von der Haupttreppe trennte — er gin"
+      }
+    },
+    {
+      "index": 5,
+      "en": {
+        "file": "06.xhtml",
+        "title": "Chapter Six",
+        "src_href": "2879777922207469885_7849-h-7.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter Six K.'s uncle—Leni One afternoon—K. was very busy at the time, getting the pos"
+      },
+      "de": {
+        "file": "06.xhtml",
+        "title": "SECHSTES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-6.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] SECHSTES KAPITEL DER ONKEL · LENI Eines Nachmittags — K. war gerade vor dem Postabschluß sehr beschäftigt — drängte sich zwischen zwei Diene"
+      }
+    },
+    {
+      "index": 6,
+      "en": {
+        "file": "07.xhtml",
+        "title": "Chapter Seven",
+        "src_href": "2879777922207469885_7849-h-8.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter Seven Lawyer—Manufacturer—Painter One winter morning—snow was falling in the du"
+      },
+      "de": {
+        "file": "07.xhtml",
+        "title": "SIEBENTES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-7.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] SIEBENTES KAPITEL ADVOKAT · FABRIKANT · MALER An einem Wintervormittag - draußen fiel Schnee im trüben Licht - saß K. trotz der frühen Stund"
+      }
+    },
+    {
+      "index": 7,
+      "en": {
+        "file": "08.xhtml",
+        "title": "Chapter Eight",
+        "src_href": "2879777922207469885_7849-h-9.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter Eight Block, the businessman—Dismissing the lawyer K. had at last made the deci"
+      },
+      "de": {
+        "file": "08.xhtml",
+        "title": "ACHTES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-8.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] ACHTES KAPITEL KAUFMANN BLOCK · KÜNDIGUNG DES ADVOKATEN Endlich hatte sich K. doch entschlossen, dem Advokaten seine Vertretung zu entziehn."
+      }
+    },
+    {
+      "index": 8,
+      "en": {
+        "file": "09.xhtml",
+        "title": "Chapter Nine",
+        "src_href": "2879777922207469885_7849-h-10.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter Nine In the Cathedral A very important Italian business contact of the bank had"
+      },
+      "de": {
+        "file": "09.xhtml",
+        "title": "NEUNTES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-9.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] NEUNTES KAPITEL IM DOM K. bekam den Auftrag, einem italienischen Geschäftsfreund der Bank, der für sie sehr wichtig war und sich zum erstenm"
+      }
+    },
+    {
+      "index": 9,
+      "en": {
+        "file": "10.xhtml",
+        "title": "Chapter Ten",
+        "src_href": "2879777922207469885_7849-h-11.htm.xhtml",
+        "preview": "The Project Gutenberg eBook of The Trial, by Franz Kafka—A Project Gutenberg eBook Chapter Ten End The evening before K.'s thirty-first birthday—it was about nine o'clock"
+      },
+      "de": {
+        "file": "10.xhtml",
+        "title": "ZEHNTES KAPITEL",
+        "src_href": "3296120298702355361_69327-h-10.htm.xhtml",
+        "preview": "Der Prozess [Inhalt] ZEHNTES KAPITEL ENDE Am Vorabend seines 31. Geburtstages — es war gegen 9 Uhr abends, die Zeit der Stille auf den Straßen — kamen zwei Herre"
+      }
+    }
+  ],
+  "metadata": {
+    "en": {
+      "dc_metadata": {
+        "title": [
+          {
+            "text": "The Trial / Der Proceß",
+            "attributes": {
+              "id": "id-1"
+            }
+          }
+        ],
+        "creator": [
+          {
+            "text": "Franz Kafka",
+            "attributes": {
+              "id": "id-3"
+            }
+          }
+        ],
+        "rights": [
+          {
+            "text": "Copyrighted. Read the copyright notice inside this book for details.",
+            "attributes": {}
+          }
+        ],
+        "identifier": [
+          {
+            "text": "id:http://www.gutenberg.org/7849",
+            "attributes": {}
+          },
+          {
+            "text": "google:zgQvBQAAQBAJ",
+            "attributes": {}
+          },
+          {
+            "text": "isbn:9783736837256",
+            "attributes": {}
+          },
+          {
+            "text": "calibre:2",
+            "attributes": {}
+          },
+          {
+            "text": "uuid:0b781d9b-3dbd-4720-a82a-60bcb64b8752",
+            "attributes": {}
+          },
+          {
+            "text": "http://www.gutenberg.org/7849",
+            "attributes": {
+              "id": "id"
+            }
+          }
+        ],
+        "contributor": [
+          {
+            "text": "David Wyllie",
+            "attributes": {
+              "id": "author_1"
+            }
+          },
+          {
+            "text": "calibre (8.8.0) [https://calibre-ebook.com]",
+            "attributes": {
+              "id": "id-2"
+            }
+          }
+        ],
+        "source": [
+          {
+            "text": "https://www.gutenberg.org/files/7849/7849-h/7849-h.htm",
+            "attributes": {}
+          }
+        ],
+        "language": [
+          {
+            "text": "en",
+            "attributes": {}
+          }
+        ],
+        "date": [
+          {
+            "text": "2017-06-23T00:00:00+00:00",
+            "attributes": {}
+          }
+        ],
+        "description": [
+          {
+            "text": "<p>This edition contains the English translation and the original text in German. \"The Trial\" (original German title: \"Der Process\", later \"Der Prozess\", \"Der Proceß\" and \"Der Prozeß\") is a novel written by Franz Kafka in 1914 and 1915 but not published until 1925. One of Kafka's best-known works, it tells the story of a man arrested and prosecuted by a remote, inaccessible authority, with the nature of his crime revealed neither to him nor the reader. Like Kafka's other novels, \"The Trial\" was never completed, although it does include a chapter which brings the story to an end. Because of this, there are some inconsistencies and discontinuities in narration within the novel, such as disparities in timing. After Kafka's death in 1924 his friend and literary executor Max Brod edited the text for publication by Verlag Die Schmiede. The original manuscript is held at the Museum of Modern Literature, Marbach am Neckar, Germany. In 1999, the book was listed in \"Le Monde\"'s 100 Books of the Century and as No. 2 of the Best German Novels of the Twentieth Century. \"Der Process\" (auch \"Der Prozeß\" oder \"Der Proceß\", Titel der Erstausgabe: \"Der Prozess\") ist neben \"Der Verschollene\" (auch unter dem Titel \"Amerika\" bekannt) und \"Das Schloss\" einer von drei unvollendeten und postum erschienenen Romanen von Franz Kafka.</p>",
+            "attributes": {}
+          }
+        ],
+        "publisher": [
+          {
+            "text": "BookRix",
+            "attributes": {}
+          }
+        ],
+        "subject": [
+          {
+            "text": "Allegories",
+            "attributes": {}
+          },
+          {
+            "text": "Trials -- Fiction",
+            "attributes": {}
+          },
+          {
+            "text": "Comics",
+            "attributes": {}
+          },
+          {
+            "text": "The Trial",
+            "attributes": {}
+          },
+          {
+            "text": "Fiction",
+            "attributes": {}
+          }
+        ]
+      },
+      "opf_metadata": [
+        {
+          "name": "title-type",
+          "content": "main",
+          "attributes": {
+            "refines": "#id-1",
+            "property": "title-type"
+          }
+        },
+        {
+          "name": "file-as",
+          "content": "Trial / Der Proceß, The",
+          "attributes": {
+            "refines": "#id-1",
+            "property": "file-as"
+          }
+        },
+        {
+          "name": "file-as",
+          "content": "Wyllie, David (Translator)",
+          "attributes": {
+            "property": "file-as",
+            "refines": "#author_1"
+          }
+        },
+        {
+          "name": "role",
+          "content": "trl",
+          "attributes": {
+            "property": "role",
+            "refines": "#author_1",
+            "scheme": "marc:relators"
+          }
+        },
+        {
+          "name": "dcterms:modified",
+          "content": "2025-09-02T19:42:53Z",
+          "attributes": {
+            "property": "dcterms:modified"
+          }
+        },
+        {
+          "name": "schema:accessMode",
+          "content": "textual",
+          "attributes": {
+            "property": "schema:accessMode"
+          }
+        },
+        {
+          "name": "schema:accessibilityFeature",
+          "content": "readingOrder",
+          "attributes": {
+            "property": "schema:accessibilityFeature"
+          }
+        },
+        {
+          "name": "schema:accessibilityHazard",
+          "content": "none",
+          "attributes": {
+            "property": "schema:accessibilityHazard"
+          }
+        },
+        {
+          "name": "schema:accessModeSufficient",
+          "content": "textual,visual",
+          "attributes": {
+            "property": "schema:accessModeSufficient"
+          }
+        },
+        {
+          "name": "schema:accessibilitySummary",
+          "content": "This publication may not have complete alternative text descriptions.",
+          "attributes": {
+            "property": "schema:accessibilitySummary"
+          }
+        },
+        {
+          "name": "role",
+          "content": "bkp",
+          "attributes": {
+            "refines": "#id-2",
+            "property": "role",
+            "scheme": "marc:relators"
+          }
+        },
+        {
+          "name": "calibre:timestamp",
+          "content": "2025-09-02T19:36:48Z",
+          "attributes": {
+            "property": "calibre:timestamp",
+            "scheme": "dcterms:W3CDTF"
+          }
+        },
+        {
+          "name": "role",
+          "content": "aut",
+          "attributes": {
+            "refines": "#id-3",
+            "property": "role",
+            "scheme": "marc:relators"
+          }
+        },
+        {
+          "name": "file-as",
+          "content": "Kafka, Franz",
+          "attributes": {
+            "refines": "#id-3",
+            "property": "file-as"
+          }
+        },
+        {
+          "name": "belongs-to-collection",
+          "content": "The Trial",
+          "attributes": {
+            "property": "belongs-to-collection",
+            "id": "id-4"
+          }
+        },
+        {
+          "name": "collection-type",
+          "content": "series",
+          "attributes": {
+            "refines": "#id-4",
+            "property": "collection-type"
+          }
+        },
+        {
+          "name": "group-position",
+          "content": "1",
+          "attributes": {
+            "refines": "#id-4",
+            "property": "group-position"
+          }
+        }
+      ],
+      "cover_info": {
+        "id": "cover",
+        "href": "cover.jpg",
+        "media_type": "image/jpeg",
+        "properties": "cover-image"
+      },
+      "media_files_count": 1
+    },
+    "de": {
+      "dc_metadata": {
+        "rights": [
+          {
+            "text": "Public domain in the USA.",
+            "attributes": {}
+          }
+        ],
+        "identifier": [
+          {
+            "text": "http://www.gutenberg.org/69327",
+            "attributes": {
+              "id": "id"
+            }
+          }
+        ],
+        "creator": [
+          {
+            "text": "Franz Kafka",
+            "attributes": {
+              "id": "author_0"
+            }
+          }
+        ],
+        "title": [
+          {
+            "text": "Der Prozess: Roman",
+            "attributes": {}
+          }
+        ],
+        "language": [
+          {
+            "text": "de",
+            "attributes": {}
+          }
+        ],
+        "subject": [
+          {
+            "text": "Allegories",
+            "attributes": {}
+          },
+          {
+            "text": "Trials -- Fiction",
+            "attributes": {}
+          }
+        ],
+        "date": [
+          {
+            "text": "2022-11-11",
+            "attributes": {}
+          }
+        ],
+        "source": [
+          {
+            "text": "https://www.gutenberg.org/files/69327/69327-h/69327-h.htm",
+            "attributes": {}
+          }
+        ]
+      },
+      "opf_metadata": [
+        {
+          "name": "file-as",
+          "content": "Kafka, Franz",
+          "attributes": {
+            "property": "file-as",
+            "refines": "#author_0"
+          }
+        },
+        {
+          "name": "role",
+          "content": "aut",
+          "attributes": {
+            "property": "role",
+            "refines": "#author_0",
+            "scheme": "marc:relators"
+          }
+        },
+        {
+          "name": "dcterms:modified",
+          "content": "2025-08-27T14:53:59Z",
+          "attributes": {
+            "property": "dcterms:modified"
+          }
+        },
+        {
+          "name": "schema:accessMode",
+          "content": "textual",
+          "attributes": {
+            "property": "schema:accessMode"
+          }
+        },
+        {
+          "name": "schema:accessibilityFeature",
+          "content": "readingOrder",
+          "attributes": {
+            "property": "schema:accessibilityFeature"
+          }
+        },
+        {
+          "name": "schema:accessibilityHazard",
+          "content": "none",
+          "attributes": {
+            "property": "schema:accessibilityHazard"
+          }
+        },
+        {
+          "name": "schema:accessModeSufficient",
+          "content": "textual,visual",
+          "attributes": {
+            "property": "schema:accessModeSufficient"
+          }
+        },
+        {
+          "name": "schema:accessibilitySummary",
+          "content": "This publication may not have complete alternative text descriptions.",
+          "attributes": {
+            "property": "schema:accessibilitySummary"
+          }
+        },
+        {
+          "name": "cover",
+          "content": "id-7784616769934166020",
+          "attributes": {
+            "name": "cover",
+            "content": "id-7784616769934166020"
+          }
+        }
+      ],
+      "cover_info": {
+        "id": "coverpage-wrapper",
+        "href": "wrap0000.xhtml",
+        "media_type": "application/xhtml+xml",
+        "properties": "svg"
+      },
+      "media_files_count": 4
+    }
+  }
+}

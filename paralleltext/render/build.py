@@ -1,17 +1,225 @@
 from ebooklib import epub
-from typing import List
+from typing import List, Optional
 from ..types import Book, AlignmentUnit  # adjust if types live elsewhere
 from html import escape
+import pathlib
+import xml.etree.ElementTree as ET
+import zipfile
+from .cover import generate_combined_cover
 
 
-# assume `per_chapter_units` is a list where each item is a list of AlignmentUnit objects
-# and src_book/tgt_book are `Book` objects with metadata we can copy
+def extract_epub_metadata(epub_path: str) -> dict:
+    """Extract metadata from an EPUB file for preservation."""
+    metadata = {
+        "dc_metadata": {},
+        "opf_metadata": [],
+        "cover_info": None,
+        "media_files": [],
+    }
+
+    try:
+        with zipfile.ZipFile(epub_path, "r") as zf:
+            # Find OPF file
+            container_xml = zf.read("META-INF/container.xml")
+            container_root = ET.fromstring(container_xml)
+            ns_container = {"c": "urn:oasis:names:tc:opendocument:xmlns:container"}
+            rootfiles = container_root.findall(".//c:rootfile", ns_container)
+            if not rootfiles:
+                return metadata
+            opf_path = rootfiles[0].attrib.get("full-path")
+            opf_dir = str(pathlib.PurePosixPath(opf_path).parent)
+
+            # Read OPF file
+            opf_xml = zf.read(opf_path)
+            opf_root = ET.fromstring(opf_xml)
+
+            ns_opf = {
+                "opf": "http://www.idpf.org/2007/opf",
+                "dc": "http://purl.org/dc/elements/1.1/",
+            }
+
+            # Extract Dublin Core metadata
+            for dc_elem in opf_root.findall(".//dc:*", ns_opf):
+                tag_name = dc_elem.tag.split("}")[-1]  # Remove namespace
+                if tag_name not in metadata["dc_metadata"]:
+                    metadata["dc_metadata"][tag_name] = []
+                metadata["dc_metadata"][tag_name].append(
+                    {"text": dc_elem.text or "", "attributes": dict(dc_elem.attrib)}
+                )
+
+            # Extract OPF-specific metadata
+            for meta_elem in opf_root.findall(".//opf:metadata/opf:meta", ns_opf):
+                name = meta_elem.attrib.get(
+                    "name", meta_elem.attrib.get("property", "unknown")
+                )
+                content = meta_elem.attrib.get("content", meta_elem.text or "")
+                metadata["opf_metadata"].append(
+                    {
+                        "name": name,
+                        "content": content,
+                        "attributes": dict(meta_elem.attrib),
+                    }
+                )
+
+            # Find cover and media files
+            manifest_items = opf_root.findall(".//opf:manifest/opf:item", ns_opf)
+            for item in manifest_items:
+                item_id = item.attrib.get("id", "")
+                href = item.attrib.get("href", "")
+                media_type = item.attrib.get("media-type", "")
+                properties = item.attrib.get("properties", "")
+
+                # Check if it's a cover
+                if (
+                    "cover" in properties.lower()
+                    or "cover" in item_id.lower()
+                    or href.lower().startswith("cover")
+                ):
+                    metadata["cover_info"] = {
+                        "id": item_id,
+                        "href": href,
+                        "media_type": media_type,
+                        "properties": properties,
+                    }
+
+                # Collect media files (images, fonts, etc.)
+                if media_type.startswith(("image/", "font/", "application/font")):
+                    abs_path = (
+                        str(pathlib.PurePosixPath(opf_dir, href))
+                        if opf_dir != "."
+                        else href
+                    )
+                    try:
+                        file_data = zf.read(abs_path)
+                        metadata["media_files"].append(
+                            {
+                                "id": item_id,
+                                "href": href,
+                                "media_type": media_type,
+                                "data": file_data,
+                            }
+                        )
+                    except KeyError:
+                        # File not found in zip
+                        pass
+
+    except Exception as e:
+        print(f"Warning: Could not extract metadata from {epub_path}: {e}")
+
+    return metadata
+
+
 def build_merged_epub(
-    src_book: Book, tgt_book: Book, per_chapter_units: List[List[AlignmentUnit]], out_path: str
+    src_book: Book,
+    tgt_book: Book,
+    per_chapter_units: List[List[AlignmentUnit]],
+    out_path: str,
+    tgt_epub_path: Optional[str] = None,
+    src_epub_path: Optional[str] = None,
+    cover_strategy: str = "diagonal",
 ) -> None:
+    """Build merged EPUB with metadata from target (English) version.
+
+    Args:
+        src_book: Source language book
+        tgt_book: Target language book
+        per_chapter_units: Aligned chapter units
+        out_path: Output path for merged EPUB
+        tgt_epub_path: Path to target EPUB file to extract metadata from
+        src_epub_path: Path to source EPUB file for cover extraction
+        cover_strategy: Cover generation strategy ("diagonal", "side_by_side")
+    """
     out = epub.EpubBook()
-    out.set_language(src_book.language or "und")
-    out.set_title(f"{src_book.title} — Parallel Edition")
+
+    # Extract rich metadata from target EPUB if available
+    tgt_metadata = {}
+    if tgt_epub_path:
+        tgt_metadata = extract_epub_metadata(tgt_epub_path)
+
+    # Extract metadata from source EPUB for cover generation
+    src_metadata = {}
+    if src_epub_path:
+        src_metadata = extract_epub_metadata(src_epub_path)
+
+    # Set basic properties, preferring target book metadata
+    if tgt_metadata.get("dc_metadata", {}).get("language"):
+        lang = tgt_metadata["dc_metadata"]["language"][0]["text"]
+    else:
+        lang = tgt_book.language or src_book.language or "und"
+    out.set_language(lang)
+
+    # Create parallel edition title
+    if tgt_metadata.get("dc_metadata", {}).get("title"):
+        base_title = tgt_metadata["dc_metadata"]["title"][0]["text"]
+    else:
+        base_title = tgt_book.title or src_book.title
+    out.set_title(f"{base_title} — ParallelText Edition")
+
+    # Add all Dublin Core metadata from target EPUB
+    if tgt_metadata.get("dc_metadata"):
+        for tag, entries in tgt_metadata["dc_metadata"].items():
+            if tag in ("title", "language"):  # Already handled above
+                continue
+            for entry in entries:
+                if tag == "creator":
+                    out.add_author(entry["text"])
+                elif tag == "contributor":
+                    out.add_author(entry["text"], role="contributor")
+                # Note: ebooklib has limited metadata support, so we'll add the rest in OPF
+
+    # Generate combined cover using modular cover generation
+    src_cover_data = None
+    tgt_cover_data = None
+
+    # Extract cover data from source EPUB
+    if src_metadata.get("media_files"):
+        for media_file in src_metadata["media_files"]:
+            if (
+                src_metadata.get("cover_info")
+                and media_file["id"] == src_metadata["cover_info"]["id"]
+            ):
+                src_cover_data = media_file["data"]
+                break
+
+    # Extract cover data from target EPUB
+    if tgt_metadata.get("media_files"):
+        for media_file in tgt_metadata["media_files"]:
+            if (
+                tgt_metadata.get("cover_info")
+                and media_file["id"] == tgt_metadata["cover_info"]["id"]
+            ):
+                tgt_cover_data = media_file["data"]
+                break
+
+    # Generate combined cover if we have at least one cover image
+    if src_cover_data or tgt_cover_data:
+        try:
+            combined_cover_data = generate_combined_cover(
+                src_cover_data, tgt_cover_data, strategy=cover_strategy
+            )
+
+            # Add combined cover to EPUB
+            cover_img = epub.EpubItem(
+                uid="combined_cover",
+                file_name="images/combined_cover.jpg",
+                media_type="image/jpeg",
+                content=combined_cover_data,
+            )
+            out.add_item(cover_img)
+            out.set_cover(cover_img.file_name, combined_cover_data)
+
+        except Exception as e:
+            print(f"Warning: Could not generate combined cover: {e}")
+            # Fallback to original target cover if available
+            if tgt_cover_data:
+                cover_img = epub.EpubItem(
+                    uid="fallback_cover",
+                    file_name="images/cover.jpg",
+                    media_type="image/jpeg",
+                    content=tgt_cover_data,
+                )
+                out.add_item(cover_img)
+                out.set_cover(cover_img.file_name, tgt_cover_data)
 
     # Basic stylesheet to gray the target language and lay out two columns.
     css = epub.EpubItem(

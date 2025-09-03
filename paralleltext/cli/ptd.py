@@ -34,7 +34,9 @@ def _substantive_chapters(book, limit: Optional[int]) -> list:
     return chs
 
 
-def _do_merge(src: str, tgt: str, out: str, chapters: int) -> None:
+def _do_merge(
+    src: str, tgt: str, out: str, chapters: int, cover_strategy: str = "diagonal"
+) -> None:
     """Core implementation shared by root-callback and the 'merge' subcommand."""
     src_book = load_epub(src)
     tgt_book = load_epub(tgt)
@@ -76,7 +78,15 @@ def _do_merge(src: str, tgt: str, out: str, chapters: int) -> None:
         per_chapter_units.append(units)
 
     Path(out).parent.mkdir(parents=True, exist_ok=True)
-    build_merged_epub(src_book, tgt_book, per_chapter_units, out)
+    build_merged_epub(
+        src_book,
+        tgt_book,
+        per_chapter_units,
+        out,
+        tgt_epub_path=tgt,
+        src_epub_path=src,
+        cover_strategy=cover_strategy,
+    )
     typer.echo(f"Wrote {out}")
 
 
@@ -90,12 +100,15 @@ def root(
         0,
         help="How many chapters to merge. Use 0 to merge ALL substantive chapters.",
     ),
+    cover_strategy: str = typer.Option(
+        "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
+    ),
 ):
     if ctx.invoked_subcommand:
         return
     # If user provided options at root level, treat it as a merge invocation.
     if src and tgt:
-        _do_merge(src, tgt, out, chapters)
+        _do_merge(src, tgt, out, chapters, cover_strategy)
     else:
         # No subcommand and not enough options → show help.
         raise typer.Exit(code=0)
@@ -110,6 +123,9 @@ def merge_cmd(
         0,
         help="How many chapters to merge. Use 0 to merge ALL substantive chapters.",
     ),
+    cover_strategy: str = typer.Option(
+        "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
+    ),
 ):
     """Merge the first N chapters from two minimal EPUBs into a single parallel EPUB."""
-    _do_merge(src, tgt, out, chapters)
+    _do_merge(src, tgt, out, chapters, cover_strategy)
