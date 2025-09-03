@@ -1,0 +1,78 @@
+*** a/tools/epub_chapter_extractor.py
+--- b/tools/epub_chapter_extractor.py
+@@
+-    FRONT_MATTER_HINTS = re.compile(
+-        r'(inhaltsverzeichnis|contents|toc|cover|titlepage|titelseite|impressum|copyright|colophon|dedication)',
+-        re.I
+-    )
++    # Front-matter that should not be counted as a chapter
++    FRONT_MATTER_HINTS = re.compile(
++        r'(inhaltsverzeichnis|contents|toc|cover|titlepage|titelseite|impressum|copyright|colophon|dedication'
++        r'|project\s+gutenberg|ebook\b|^.*-h-0\.htm(?:\.xhtml)?$)',
++        re.I
++    )
++
++    # Back-matter that should not be counted as a chapter
++    BACK_MATTER_HINTS = re.compile(
++        r'(the\s+full\s+project\s+gutenberg\s+license|nachwort\b|end\s+of\s+the\s+project\s+gutenberg\s+ebook)',
++        re.I
++    )
+@@
+-    def _is_front_matter(self, href: str, properties: str, media_type: str) -> bool:
++    def _is_front_matter(self, href: str, properties: str, media_type: str) -> bool:
+         if 'nav' in (properties or ''):
+             return True
+         if media_type in ('application/x-dtbncx+xml',):
+             return True
+-        if self.FRONT_MATTER_HINTS.search(href or ''):
++        if self.FRONT_MATTER_HINTS.search(href or ''):
+             return True
+         return False
+@@
+-    def extract_chapters(self, min_chars: int = 400) -> List[Chapter]:
++    def extract_chapters(self, min_chars: int = 380) -> List[Chapter]:
+         chapters: List[Chapter] = []
+-        for idx, idref in enumerate(self.spine_ids):
++        for idx, idref in enumerate(self.spine_ids):
+             meta = self.manifest.get(idref, {})
+             href = meta.get('href')
+             media_type = meta.get('media-type', '')
+             properties = meta.get('properties', '')
+             if not href:
+                 continue
+             absp = self._abs(href)
+             # Only text-like
+             if media_type not in ('application/xhtml+xml', 'text/html', 'application/xml', ''):
+                 continue
+             # Skip front matter
+             if self._is_front_matter(href, properties, media_type):
+                 continue
+             try:
+                 data = self._read_bytes(absp)
+             except KeyError:
+                 continue
+             # crude text length
+             try:
+                 html = data.decode('utf-8', errors='ignore')
+             except Exception:
+                 html = ''
+             plain = self._strip_tags(html).strip()
++            # Skip common back-matter (license, Nachwort, explicit Gutenberg markers)
++            if self.BACK_MATTER_HINTS.search(plain[:4096]):
++                continue
++            # Extra guard: Gutenberg title page often has the phrase below and sits at spine index 0
++            if idx == 0 and re.search(r'\bproject\s+gutenberg\b', plain, re.I):
++                continue
+             if len(plain) < min_chars:
+                 # likely a bridge/image/tiny page
+                 continue
+             title = self._extract_title_from_xhtml(data) or pathlib.Path(href).stem
+             preview = re.sub(r'\s+', ' ', plain[:180])
+-            chapters.append(Chapter(index=len(chapters), href=href, title=title, bytes=data, text_preview=preview))
+-        # Heuristic: Ensure monotonic order and non-empty
+-        return chapters
++            chapters.append(Chapter(index=0, href=href, title=title, bytes=data, text_preview=preview))
++        # Re-number indexes after filtering to avoid gaps and make "first N" robust
++        for i, ch in enumerate(chapters):
++            ch.index = i
++        return chapters

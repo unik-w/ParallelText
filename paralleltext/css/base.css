@@ -1,0 +1,11 @@
+html, body { font-family: serif; line-height: 1.5; }
+p { margin: 0 0 .7em 0; }
+
+
+p.src { }
+p.tgt { opacity: .65; }
+
+
+/* language hints */
+p.src[lang] { }
+p.tgt[lang] { }
