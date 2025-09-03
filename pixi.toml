@@ -8,7 +8,7 @@ version = "0.1.0"
 
 [tasks]
 ptd = "python -m paralleltext"
-merge = "python -m paralleltext merge --src ./tests/fixtures/de.epub --tgt ./tests/fixtures/en.epub --out ./tests/fixtures/kafka_parallel.epub"
+merge = "python -m paralleltext merge --src ./tests/fixtures/de.epub --tgt ./tests/fixtures/en.epub --out ./tests/fixtures/paralleltext.epub"
 make-fixtures = "python tools/make_fixtures.py --de ./tests/data/Der_Prozess_full.epub --en ./tests/data/The_Trial_full.epub --out ./tests/fixtures/"
 test = "pytest -q"
 

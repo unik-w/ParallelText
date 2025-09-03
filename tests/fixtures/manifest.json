@@ -22,7 +22,7 @@
         "file": "01.xhtml",
         "title": "ERSTES KAPITEL",
         "src_href": "3296120298702355361_69327-h-1.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] ERSTES KAPITEL VERHAFTUNG · GESPRÄCH MIT FRAU GRUBACH · DANN FRÄULEIN BÜRSTNER Jemand mußte Josef K. verleumdet haben, denn ohne daß er etw"
+        "preview": "Der Prozess [Inhalt] ERSTES KAPITEL VERHAFTUNG · GESPRÄCH MIT FRAU GRUBACH · DANN FRÄULEIN BÜRSTNER"
       }
     },
     {
@@ -37,7 +37,7 @@
         "file": "02.xhtml",
         "title": "ZWEITES KAPITEL",
         "src_href": "3296120298702355361_69327-h-2.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] ZWEITES KAPITEL ERSTE UNTERSUCHUNG K. war telephonisch verständigt worden, daß am nächsten Sonntag eine kleine Untersuchung in seiner Angele"
+        "preview": "Der Prozess [Inhalt] ZWEITES KAPITEL ERSTE UNTERSUCHUNG K. war telephonisch verständigt worden, da"
       }
     },
     {
@@ -52,7 +52,7 @@
         "file": "03.xhtml",
         "title": "DRITTES KAPITEL",
         "src_href": "3296120298702355361_69327-h-3.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] DRITTES KAPITEL IM LEEREN SITZUNGSSAAL · DER STUDENT · DIE KANZLEIEN K. wartete während der nächsten Woche von Tag zu Tag auf eine neuerlich"
+        "preview": "Der Prozess [Inhalt] DRITTES KAPITEL IM LEEREN SITZUNGSSAAL · DER STUDENT · DIE KANZLEIEN K. warte"
       }
     },
     {
@@ -67,7 +67,7 @@
         "file": "04.xhtml",
         "title": "VIERTES KAPITEL",
         "src_href": "3296120298702355361_69327-h-4.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] VIERTES KAPITEL DIE FREUNDIN DES FRÄULEIN BÜRSTNER In der nächsten Zeit war es K. unmöglich, mit Fräulein Bürstner auch nur einige wenige Wo"
+        "preview": "Der Prozess [Inhalt] VIERTES KAPITEL DIE FREUNDIN DES FRÄULEIN BÜRSTNER In der nächsten Zeit war e"
       }
     },
     {
@@ -82,7 +82,7 @@
         "file": "05.xhtml",
         "title": "FÜNFTES KAPITEL",
         "src_href": "3296120298702355361_69327-h-5.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] FÜNFTES KAPITEL DER PRÜGLER Als K. an einem der nächsten Abende den Korridor passierte, der sein Bureau von der Haupttreppe trennte — er gin"
+        "preview": "Der Prozess [Inhalt] FÜNFTES KAPITEL DER PRÜGLER Als K. an einem der nächsten Abende den Korridor "
       }
     },
     {
@@ -97,7 +97,7 @@
         "file": "06.xhtml",
         "title": "SECHSTES KAPITEL",
         "src_href": "3296120298702355361_69327-h-6.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] SECHSTES KAPITEL DER ONKEL · LENI Eines Nachmittags — K. war gerade vor dem Postabschluß sehr beschäftigt — drängte sich zwischen zwei Diene"
+        "preview": "Der Prozess [Inhalt] SECHSTES KAPITEL DER ONKEL · LENI Eines Nachmittags — K. war gerade vor dem P"
       }
     },
     {
@@ -112,7 +112,7 @@
         "file": "07.xhtml",
         "title": "SIEBENTES KAPITEL",
         "src_href": "3296120298702355361_69327-h-7.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] SIEBENTES KAPITEL ADVOKAT · FABRIKANT · MALER An einem Wintervormittag - draußen fiel Schnee im trüben Licht - saß K. trotz der frühen Stund"
+        "preview": "Der Prozess [Inhalt] SIEBENTES KAPITEL ADVOKAT · FABRIKANT · MALER An einem Wintervormittag - drau"
       }
     },
     {
@@ -127,7 +127,7 @@
         "file": "08.xhtml",
         "title": "ACHTES KAPITEL",
         "src_href": "3296120298702355361_69327-h-8.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] ACHTES KAPITEL KAUFMANN BLOCK · KÜNDIGUNG DES ADVOKATEN Endlich hatte sich K. doch entschlossen, dem Advokaten seine Vertretung zu entziehn."
+        "preview": "Der Prozess [Inhalt] ACHTES KAPITEL KAUFMANN BLOCK · KÜNDIGUNG DES ADVOKATEN Endlich hatte sich K."
       }
     },
     {
@@ -142,7 +142,7 @@
         "file": "09.xhtml",
         "title": "NEUNTES KAPITEL",
         "src_href": "3296120298702355361_69327-h-9.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] NEUNTES KAPITEL IM DOM K. bekam den Auftrag, einem italienischen Geschäftsfreund der Bank, der für sie sehr wichtig war und sich zum erstenm"
+        "preview": "Der Prozess [Inhalt] NEUNTES KAPITEL IM DOM K. bekam den Auftrag, einem italienischen Geschäftsfre"
       }
     },
     {
@@ -157,7 +157,7 @@
         "file": "10.xhtml",
         "title": "ZEHNTES KAPITEL",
         "src_href": "3296120298702355361_69327-h-10.htm.xhtml",
-        "preview": "Der Prozess [Inhalt] ZEHNTES KAPITEL ENDE Am Vorabend seines 31. Geburtstages — es war gegen 9 Uhr abends, die Zeit der Stille auf den Straßen — kamen zwei Herre"
+        "preview": "Der Prozess [Inhalt] ZEHNTES KAPITEL ENDE Am Vorabend seines 31. Geburtstages — es war gegen 9 Uhr"
       }
     }
   ],
@@ -426,6 +426,22 @@
     },
     "de": {
       "dc_metadata": {
+        "title": [
+          {
+            "text": "Der Proceß",
+            "attributes": {
+              "id": "id-1"
+            }
+          }
+        ],
+        "creator": [
+          {
+            "text": "Franz Kafka",
+            "attributes": {
+              "id": "id-3"
+            }
+          }
+        ],
         "rights": [
           {
             "text": "Public domain in the USA.",
@@ -434,29 +450,67 @@
         ],
         "identifier": [
           {
+            "text": "id:http://www.gutenberg.org/69327",
+            "attributes": {}
+          },
+          {
+            "text": "google:p8lsAgAAQBAJ",
+            "attributes": {}
+          },
+          {
+            "text": "isbn:9783104011738",
+            "attributes": {}
+          },
+          {
+            "text": "calibre:6",
+            "attributes": {}
+          },
+          {
+            "text": "uuid:71b93dfd-6fc2-47e3-86a7-1032fc3e4a75",
+            "attributes": {}
+          },
+          {
             "text": "http://www.gutenberg.org/69327",
             "attributes": {
               "id": "id"
             }
           }
         ],
-        "creator": [
+        "source": [
           {
-            "text": "Franz Kafka",
-            "attributes": {
-              "id": "author_0"
-            }
+            "text": "https://www.gutenberg.org/files/69327/69327-h/69327-h.htm",
+            "attributes": {}
           }
         ],
-        "title": [
+        "contributor": [
           {
-            "text": "Der Prozess: Roman",
-            "attributes": {}
+            "text": "calibre (8.8.0) [https://calibre-ebook.com]",
+            "attributes": {
+              "id": "id-2"
+            }
           }
         ],
         "language": [
           {
             "text": "de",
+            "attributes": {}
+          }
+        ],
+        "date": [
+          {
+            "text": "2010-11-11T00:00:00+00:00",
+            "attributes": {}
+          }
+        ],
+        "description": [
+          {
+            "text": "<p>Mit dem Werkbeitrag aus Kindlers Literatur Lexikon. Mit dem Autorenporträt aus dem Metzler Lexikon Weltliteratur. Mit Daten zu Leben und Werk, exklusiv verfasst von der Redaktion der Zeitschrift für Literatur TEXT + KRITIK. ›Der Proceߋ ist Franz Kafkas weltweit meistgelesener und bekanntester Roman – nicht zuletzt dank der kongenialen Verfilmung durch Orson Welles. In der Geschichte des Joseph K., dem in einem ebenso absurden wie undurchsichtigen Verfahren der Prozess gemacht wird, zeigt der große Prager Schriftsteller seine ganze Erzählkunst. Je mehr K. seine ungenannte Schuld zu ergründen und sich zu verteidigen sucht, desto tiefer gerät er in die alptraumhaften Labyrinthe einer undurchschaubaren Gesetzesmaschinerie. Lakonisch im Ton, steigert sich der Text vom Grotesk-Komischen ins abgrundtief Tragische – ein literarisches Meisterwerk.</p>",
+            "attributes": {}
+          }
+        ],
+        "publisher": [
+          {
+            "text": "S. Fischer Verlag",
             "attributes": {}
           }
         ],
@@ -468,42 +522,33 @@
           {
             "text": "Trials -- Fiction",
             "attributes": {}
-          }
-        ],
-        "date": [
+          },
           {
-            "text": "2022-11-11",
-            "attributes": {}
-          }
-        ],
-        "source": [
-          {
-            "text": "https://www.gutenberg.org/files/69327/69327-h/69327-h.htm",
+            "text": "Fiction",
             "attributes": {}
           }
         ]
       },
       "opf_metadata": [
         {
-          "name": "file-as",
-          "content": "Kafka, Franz",
+          "name": "title-type",
+          "content": "main",
           "attributes": {
-            "property": "file-as",
-            "refines": "#author_0"
+            "refines": "#id-1",
+            "property": "title-type"
           }
         },
         {
-          "name": "role",
-          "content": "aut",
+          "name": "file-as",
+          "content": "Proceß, Der",
           "attributes": {
-            "property": "role",
-            "refines": "#author_0",
-            "scheme": "marc:relators"
+            "refines": "#id-1",
+            "property": "file-as"
           }
         },
         {
           "name": "dcterms:modified",
-          "content": "2025-08-27T14:53:59Z",
+          "content": "2025-09-03T10:25:23Z",
           "attributes": {
             "property": "dcterms:modified"
           }
@@ -544,19 +589,45 @@
           }
         },
         {
-          "name": "cover",
-          "content": "id-7784616769934166020",
+          "name": "role",
+          "content": "bkp",
           "attributes": {
-            "name": "cover",
-            "content": "id-7784616769934166020"
+            "refines": "#id-2",
+            "property": "role",
+            "scheme": "marc:relators"
+          }
+        },
+        {
+          "name": "calibre:timestamp",
+          "content": "2025-09-03T10:25:01Z",
+          "attributes": {
+            "property": "calibre:timestamp",
+            "scheme": "dcterms:W3CDTF"
+          }
+        },
+        {
+          "name": "role",
+          "content": "aut",
+          "attributes": {
+            "refines": "#id-3",
+            "property": "role",
+            "scheme": "marc:relators"
+          }
+        },
+        {
+          "name": "file-as",
+          "content": "Kafka, Franz",
+          "attributes": {
+            "refines": "#id-3",
+            "property": "file-as"
           }
         }
       ],
       "cover_info": {
-        "id": "coverpage-wrapper",
-        "href": "wrap0000.xhtml",
-        "media_type": "application/xhtml+xml",
-        "properties": "svg"
+        "id": "cover",
+        "href": "cover.jpg",
+        "media_type": "image/jpeg",
+        "properties": "cover-image"
       },
       "media_files_count": 4
     }

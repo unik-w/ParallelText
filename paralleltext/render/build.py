@@ -171,7 +171,7 @@ def build_merged_epub(
     src_cover_data = None
     tgt_cover_data = None
 
-    # Extract cover data from source EPUB
+    # Extract cover data from source EPUB using metadata first, then fallback
     if src_metadata.get("media_files"):
         for media_file in src_metadata["media_files"]:
             if (
@@ -181,7 +181,13 @@ def build_merged_epub(
                 src_cover_data = media_file["data"]
                 break
 
-    # Extract cover data from target EPUB
+    # Fallback: use robust cover extraction if metadata method failed
+    if not src_cover_data:
+        from .cover import extract_cover_from_epub
+
+        src_cover_data = extract_cover_from_epub(src_epub_path)
+
+    # Extract cover data from target EPUB using metadata first, then fallback
     if tgt_metadata.get("media_files"):
         for media_file in tgt_metadata["media_files"]:
             if (
@@ -190,6 +196,12 @@ def build_merged_epub(
             ):
                 tgt_cover_data = media_file["data"]
                 break
+
+    # Fallback: use robust cover extraction if metadata method failed
+    if not tgt_cover_data:
+        from .cover import extract_cover_from_epub
+
+        tgt_cover_data = extract_cover_from_epub(tgt_epub_path)
 
     # Generate combined cover if we have at least one cover image
     if src_cover_data or tgt_cover_data:
