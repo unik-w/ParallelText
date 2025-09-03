@@ -1,77 +1,65 @@
 from ebooklib import epub
-from bs4 import BeautifulSoup
 from typing import List
-from ..types import Book, AlignmentUnit, MergeResult
-
-CSS_PATH = "paralleltext/css/base.css"
-
-
-def _wrap_pair(unit: AlignmentUnit, src_lang: str, tgt_lang: str) -> str:
-    # Ensure each p has proper class/lang
-    def ensure_block(html: str, klass: str, lang: str) -> str:
-        soup = BeautifulSoup(html, "lxml")
-        p = soup.find("p") or soup
-        if p.name != "p":
-            p = soup.new_tag("p")
-            p.string = soup.get_text()
-            p["class"] = (p.get("class") or []) + [klass]
-        if lang:
-            p["lang"] = lang
-        return str(p)
-
-    src = ensure_block(unit.src_html, "src", src_lang)
-    tgt = ensure_block(unit.tgt_html, "tgt", tgt_lang)
-    return src + "\n" + tgt
+from ..types import Book, AlignmentUnit  # adjust if types live elsewhere
+from html import escape
 
 
+# assume `per_chapter_units` is a list where each item is a list of AlignmentUnit objects
+# and src_book/tgt_book are `Book` objects with metadata we can copy
 def build_merged_epub(
-    src: Book, tgt: Book, per_chapter_units: List[List[AlignmentUnit]], out_path: str
+    src_book: Book, tgt_book: Book, per_chapter_units: List[List[AlignmentUnit]], out_path: str
 ) -> None:
-    book = epub.EpubBook()
-    # Metadata (simple for M1)
-    title = f"{src.title} / {tgt.title} (Parallel Edition)".strip()
-    book.set_title(title)
-    for a in sorted(set(src.authors + tgt.authors)):
-        book.add_author(a)
-    book.set_language(src.language or "und")
+    out = epub.EpubBook()
+    out.set_language(src_book.language or "und")
+    out.set_title(f"{src_book.title} — Parallel Edition")
 
-    # CSS
-    with open(CSS_PATH, "r", encoding="utf-8") as f:
-        css_content = f.read()
-    style = epub.EpubItem(
-        uid="style_base",
-        file_name="styles/base.css",
+    # Basic stylesheet to gray the target language and lay out two columns.
+    css = epub.EpubItem(
+        uid="style",
+        file_name="style/parallel.css",
         media_type="text/css",
-        content=css_content,
+        content=b"""
+html, body { margin: 0; padding: 0; }
+.pt-chapter { padding: 1.2rem 1rem; }
+.pt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.75rem; }
+.pt-src { line-height: 1.5; }
+.pt-tgt { line-height: 1.5; color: #666; }
+.pt-meta { font-size: 0.9em; color: #666; margin: 0.5rem 0 1rem; }
+""",
     )
-    book.add_item(style)
+    out.add_item(css)
 
     spine = ["nav"]
-    toc = []
 
     for i, units in enumerate(per_chapter_units, start=1):
-        html = [
-            '<html xmlns="http://www.w3.org/1999/xhtml">',
-            '<head><meta charset="utf-8"/><link rel="stylesheet" type="text/css" href="styles/base.css"/></head>',
-            f"<body>",
-        ]
-        for u in units:
-            html.append(_wrap_pair(u, src.language, tgt.language))
-        html.append("</body></html>")
-        chapter = epub.EpubHtml(
+        item = epub.EpubHtml(
             title=f"Chapter {i}",
             file_name=f"chap_{i:03}.xhtml",
-            content="\n".join(html),
         )
-        book.add_item(chapter)
-        spine.append(chapter)
-        toc.append(chapter)
+        html = [
+            '<html xmlns="http://www.w3.org/1999/xhtml"><head><meta charset="utf-8"/>',
+            '<link rel="stylesheet" type="text/css" href="../style/parallel.css"/>',
+            "</head><body>",
+            f'<div class="pt-chapter"><div class="pt-meta">{escape(src_book.title)} / {escape(tgt_book.title)}</div>',
+        ]
+        for unit in units:
+            # unit is an AlignmentUnit object with src_html and tgt_html attributes
+            html.append(
+                '<div class="pt-row">'
+                f'<div class="pt-src" lang="{src_book.language or "und"}">{unit.src_html}</div>'
+                f'<div class="pt-tgt" lang="{tgt_book.language or "und"}">{unit.tgt_html}</div>'
+                "</div>"
+            )
+        html.append("</div></body></html>")
+        item.set_content("".join(html).encode("utf-8"))
+        out.add_item(item)
+        spine.append(item)
 
-    book.toc = tuple(toc)
-    book.spine = spine
+    out.spine = spine
+    out.toc = tuple(spine[1:])  # skip cover/title if you add one earlier
+    out.add_item(epub.EpubNcx())
+    out.add_item(epub.EpubNav())
+    # Ensure CSS is packaged:
+    out.add_item(css)
 
-    # Nav
-    book.add_item(epub.EpubNcx())
-    book.add_item(epub.EpubNav())
-
-    epub.write_epub(out_path, book)
+    epub.write_epub(out_path, out)

@@ -7,8 +7,8 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
-ptd = "python -m paralleltext.cli.ptd"
-merge = "python -m paralleltext.cli.ptd merge --src tests/data/DE_kafka_min.epub --tgt tests/data/EN_kafka_min.epub --out build/kafka_parallel.epub"
+ptd = "python -m paralleltext"
+merge = "python -m paralleltext merge --src fixtures/de.epub --tgt fixtures/en.epub --out fixtures/kafka_parallel.epub"
 make-fixtures = "python tools/make_fixtures.py --de ./tests/data/Der_Prozess_full.epub --en ./tests/data/The_Trial_full.epub --out tests/data"
 test = "pytest -q"
 
