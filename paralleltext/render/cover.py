@@ -155,13 +155,21 @@ def get_cover_generator(strategy: str = "diagonal") -> CoverGenerator:
 
     Returns:
         CoverGenerator instance
+
+    Raises:
+        ValueError: If strategy is not supported
     """
     strategies = {
         "diagonal": DiagonalSplitCoverGenerator,
         "side_by_side": SideBySideCoverGenerator,
     }
 
-    generator_class = strategies.get(strategy, DiagonalSplitCoverGenerator)
+    if strategy not in strategies:
+        raise ValueError(
+            f"Unsupported cover strategy: {strategy}. Supported strategies: {list(strategies.keys())}"
+        )
+
+    generator_class = strategies[strategy]
     return generator_class()
 
 

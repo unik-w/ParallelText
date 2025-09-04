@@ -236,3 +236,8 @@ Extend `extract_epub_metadata()` in `paralleltext/render/build.py` for additiona
 ## 📄 License
 
 This project is for educational and research purposes. Ensure you have proper rights to the EPUB files you process.
+
+
+## Notes
+
+Final changes made per iteration will all be documented in .bots/
