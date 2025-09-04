@@ -1,6 +1,6 @@
 from ebooklib import epub
 from typing import List, Optional
-from ..types import Book, AlignmentUnit  # adjust if types live elsewhere
+from ..data_types import Book, AlignmentUnit  # adjust if types live elsewhere
 from html import escape
 import pathlib
 import xml.etree.ElementTree as ET

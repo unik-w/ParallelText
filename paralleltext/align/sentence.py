@@ -1,7 +1,7 @@
 """Sentence-level alignment algorithms."""
 
 from typing import List
-from ..types import AlignmentUnit
+from ..data_types import AlignmentUnit
 
 
 def align_sentences_one_to_one(

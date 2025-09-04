@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from pathlib import Path
 from typing import List
 
-from ..types import Chapter, Book
+from ..data_types import Chapter, Book
 
 MAIN_DOC_TYPES = {ebooklib.ITEM_DOCUMENT}
 

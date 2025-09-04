@@ -23,6 +23,12 @@ class AlignmentUnit:
 
 
 @dataclass
+class AlignedSentences:
+    source: List[str]
+    target: List[str]
+
+
+@dataclass
 class MergeResult:
     title: str
     chapters: List[List[AlignmentUnit]]

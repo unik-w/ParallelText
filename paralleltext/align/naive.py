@@ -1,5 +1,5 @@
 from typing import List
-from ..types import AlignmentUnit
+from ..data_types import AlignmentUnit
 
 
 def align_one_to_one(src_paras: List[str], tgt_paras: List[str]) -> List[AlignmentUnit]:

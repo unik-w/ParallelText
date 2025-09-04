@@ -8,7 +8,10 @@ from ..text.segment import paragraphs_from_xhtml
 from ..text.sentence import sentences_from_xhtml
 from ..align.naive import align_one_to_one
 from ..align.sentence import align_sentences_one_to_one
+from ..align.ollama_semantic import create_ollama_semantic_aligner
+from ..services.ollama_client import OllamaEmbeddingError
 from ..render.build import build_merged_epub
+from ..data_types import AlignmentUnit
 
 cli = typer.Typer(add_completion=False, no_args_is_help=True)
 
@@ -43,8 +46,9 @@ def _do_merge(
     chapters: int,
     cover_strategy: str = "diagonal",
     granularity: str = "paragraph",
+    alignment_method: str = "naive",
 ) -> None:
-    """Core implementation shared by root-callback and the 'merge' subcommand."""
+    """Core implementation shared by root-callback and 'merge' subcommand."""
     src_book = load_epub(src)
     tgt_book = load_epub(tgt)
 
@@ -80,13 +84,57 @@ def _do_merge(
 
             if not s_units or not t_units:
                 typer.secho(
-                    f"Warning: empty chapter content encountered (src='{getattr(s, 'title', 'N/A')}', "
-                    f"tgt='{getattr(t, 'title', 'N/A')}'). Skipping chapter.",
+                    f"Warning: empty chapter content encountered "
+                    f'(src=\'{getattr(s, "title", "N/A")}\', '
+                    f'tgt=\'{getattr(t, "title", "N/A")}\'). '
+                    f"Skipping chapter.",
                     fg=typer.colors.YELLOW,
                 )
                 continue
 
-            units = align_sentences_one_to_one(s_units, t_units)
+            # Choose alignment method for sentences
+            if alignment_method == "semantic":
+                # Use Ollama-based semantic alignment with chunking
+                try:
+                    aligner = create_ollama_semantic_aligner(
+                        model="multilingual",
+                        # Use threshold from config.toml
+                        chunking_strategy="sliding_window",
+                        max_chunk_size=500,  # ~125 words
+                        max_sentences_per_chunk=20,  # Manageable batch size
+                    )
+
+                    # Show processing info
+                    info = aligner.get_alignment_info()
+                    typer.secho(
+                        f'Using semantic alignment: {info["model"]} '
+                        f'({info["chunking_strategy"]}, '
+                        f'max_chunk_size={info["max_chunk_size"]}, '
+                        f'max_sentences={info["max_sentences_per_chunk"]})',
+                        fg=typer.colors.CYAN,
+                    )
+
+                    aligned = aligner.align(s_units, t_units, method="threshold")
+                    units = [
+                        AlignmentUnit(src_html=src, tgt_html=tgt)
+                        for src, tgt in zip(aligned.source, aligned.target)
+                    ]
+                except (
+                    ImportError,
+                    ConnectionError,
+                    RuntimeError,
+                    OllamaEmbeddingError,
+                ) as e:
+                    typer.secho(
+                        f"Warning: Ollama semantic alignment failed: {e}. "
+                        f"Falling back to naive alignment.",
+                        fg=typer.colors.YELLOW,
+                    )
+                    # Fallback to naive alignment
+                    units = align_sentences_one_to_one(s_units, t_units)
+            else:
+                # Default naive 1:1 alignment
+                units = align_sentences_one_to_one(s_units, t_units)
             per_chapter_units.append(units)
         else:
             # Default paragraph-level alignment
@@ -128,18 +176,23 @@ def root(
         help="How many chapters to merge. Use 0 to merge ALL substantive chapters.",
     ),
     cover_strategy: str = typer.Option(
-        "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
+        "diagonal", help="Cover generation strategy: diagonal or side_by_side"
     ),
     granularity: str = typer.Option(
-        "paragraph", help="Alignment granularity: 'paragraph' or 'sentence'"
+        "paragraph", help="Alignment granularity: paragraph or sentence"
+    ),
+    alignment_method: str = typer.Option(
+        "naive", help="Alignment method: naive or semantic (for sentences)"
     ),
 ):
-    """ParallelText - Create bilingual parallel EPUBs."""
+    """Create bilingual parallel EPUBs."""
     if ctx.invoked_subcommand:
         return
     # If user provided options at root level, treat it as a merge invocation.
     if src and tgt:
-        _do_merge(src, tgt, out, chapters, cover_strategy, granularity)
+        _do_merge(
+            src, tgt, out, chapters, cover_strategy, granularity, alignment_method
+        )
     else:
         # No subcommand and not enough options → show help.
         raise typer.Exit(code=0)
@@ -155,11 +208,14 @@ def merge_cmd(
         help="How many chapters to merge. Use 0 to merge ALL substantive chapters.",
     ),
     cover_strategy: str = typer.Option(
-        "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
+        "diagonal", help="Cover generation strategy: diagonal or side_by_side"
     ),
     granularity: str = typer.Option(
-        "sentence", help="Alignment granularity: 'paragraph' or 'sentence'"
+        "sentence", help="Alignment granularity: paragraph or sentence"
+    ),
+    alignment_method: str = typer.Option(
+        "naive", help="Alignment method: naive or semantic (for sentences)"
     ),
 ):
-    """Merge the first N chapters from two minimal EPUBs into a single parallel EPUB."""
-    _do_merge(src, tgt, out, chapters, cover_strategy, granularity)
+    """Merge first N chapters from two minimal EPUBs into a parallel EPUB."""
+    _do_merge(src, tgt, out, chapters, cover_strategy, granularity, alignment_method)
