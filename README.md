@@ -5,7 +5,8 @@ A Python tool for creating bilingual parallel text EPUBs by merging and aligning
 ## ✨ Features
 
 ### Core Functionality
-- **Chapter Extraction & Alignment**: Intelligent 1:1 paragraph alignment between source and target language EPUBs
+- **Chapter Extraction & Alignment**: Intelligent 1:1 alignment between source and target language EPUBs at paragraph or sentence level
+- **Flexible Granularity**: Choose between paragraph-level or sentence-level alignment for optimal language learning
 - **Metadata Preservation**: Complete Dublin Core metadata extraction and preservation (title, author, publisher, date, etc.)
 - **Cover Art Generation**: Modular system for combining cover images with multiple strategies
 - **EPUB3 Output**: Valid EPUB3 files with proper navigation, CSS styling, and structure
@@ -13,11 +14,12 @@ A Python tool for creating bilingual parallel text EPUBs by merging and aligning
 
 ### Advanced Features
 - **Smart Chapter Detection**: Automatically filters out TOC, copyright, and non-substantive content
+- **Sentence-Level Alignment**: Break down paragraphs into individual sentences for better language learning
 - **Flexible Cover Strategies**: 
   - Diagonal split (upper/lower triangular masks)
   - Side-by-side composition
-- **CSS Styling**: English text styling with visual differentiation
-- **Configurable Output**: Control chapter limits, cover strategies, and output paths
+- **CSS Styling**: Enhanced styling with visual differentiation for sentence vs paragraph modes
+- **Configurable Output**: Control chapter limits, alignment granularity, cover strategies, and output paths
 
 ## 🚀 Quick Start
 
@@ -58,6 +60,7 @@ pixi run ptd merge \
     --tgt tests/data/EN_kafka_min.epub \
     --out build/my_parallel.epub \
     --cover-strategy diagonal \
+    --granularity sentence \
     --chapters 5
 ```
 
@@ -82,8 +85,22 @@ pixi run ptd merge \
     --tgt english_book.epub \          # Target language EPUB  
     --out parallel_output.epub \       # Output file path
     --chapters 10 \                    # Limit to first 10 chapters (0 = all)
-    --cover-strategy side_by_side      # Cover combination strategy
+    --cover-strategy side_by_side \     # Cover combination strategy
+    --granularity sentence             # Sentence-level alignment for language learning
 ```
+
+### Alignment Granularity Options
+
+**Paragraph-level** (`--granularity paragraph`):
+- Traditional paragraph-to-paragraph alignment
+- Better for reading flow and context
+- Default mode for compatibility
+
+**Sentence-level** (`--granularity sentence`):
+- Individual sentence-to-sentence alignment  
+- Ideal for language learning and detailed comparison
+- Shorter alignment units reduce page scrolling
+- Better for studying sentence structure and vocabulary
 
 ### Cover Generation Strategies
 
@@ -121,9 +138,11 @@ paralleltext/
 │   ├── epub_read.py       # EPUB loading and parsing
 │   └── epub_write.py      # EPUB generation
 ├── text/                  # Text processing
-│   └── segment.py         # Paragraph extraction from HTML
+│   ├── segment.py         # Paragraph extraction from HTML
+│   └── sentence.py        # Sentence extraction and segmentation
 ├── align/                 # Alignment algorithms
-│   └── naive.py           # 1:1 paragraph alignment
+│   ├── naive.py           # 1:1 paragraph alignment
+│   └── sentence.py        # 1:1 sentence alignment
 └── render/                # Output generation
     ├── build.py           # Main EPUB building logic
     └── cover.py           # Modular cover generation
@@ -139,10 +158,10 @@ tools/
 **EPUB Processing Pipeline**:
 1. **Load** source and target EPUBs with metadata extraction
 2. **Filter** substantive chapters (excludes TOC, copyright, etc.)
-3. **Extract** paragraphs from XHTML content
-4. **Align** paragraphs using 1:1 naive alignment
+3. **Extract** paragraphs or sentences from XHTML content based on granularity setting
+4. **Align** content units using 1:1 naive alignment (paragraph-to-paragraph or sentence-to-sentence)
 5. **Generate** combined cover art with chosen strategy
-6. **Build** final EPUB3 with preserved metadata and styling
+6. **Build** final EPUB3 with preserved metadata and enhanced styling
 
 **Metadata Preservation**:
 - Dublin Core elements (title, creator, publisher, date, language, etc.)
@@ -218,11 +237,13 @@ Extend `extract_epub_metadata()` in `paralleltext/render/build.py` for additiona
 
 **Implemented**:
 - ✅ Paragraph extraction from EPUB chapters
-- ✅ Naïve 1:1 alignment (zip, truncate to shortest)
-- ✅ Valid EPUB3 output with navigation and CSS
+- ✅ Sentence extraction and segmentation from EPUB chapters  
+- ✅ Naïve 1:1 alignment (zip, truncate to shortest) for both paragraph and sentence levels
+- ✅ Configurable alignment granularity via CLI (`--granularity paragraph|sentence`)
+- ✅ Valid EPUB3 output with navigation and enhanced CSS styling
 - ✅ Complete metadata preservation system
 - ✅ Modular cover art generation (diagonal/side-by-side)
-- ✅ English text styling and differentiation
+- ✅ Enhanced styling with visual differentiation for different alignment modes
 - ✅ Comprehensive CLI with flexible options
 
 **Future Enhancements (M2+)**:

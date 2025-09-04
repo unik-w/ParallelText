@@ -5,7 +5,9 @@ import re
 
 from ..io.epub_read import load_epub
 from ..text.segment import paragraphs_from_xhtml
+from ..text.sentence import sentences_from_xhtml
 from ..align.naive import align_one_to_one
+from ..align.sentence import align_sentences_one_to_one
 from ..render.build import build_merged_epub
 
 cli = typer.Typer(add_completion=False, no_args_is_help=True)
@@ -35,7 +37,12 @@ def _substantive_chapters(book, limit: Optional[int]) -> list:
 
 
 def _do_merge(
-    src: str, tgt: str, out: str, chapters: int, cover_strategy: str = "diagonal"
+    src: str,
+    tgt: str,
+    out: str,
+    chapters: int,
+    cover_strategy: str = "diagonal",
+    granularity: str = "paragraph",
 ) -> None:
     """Core implementation shared by root-callback and the 'merge' subcommand."""
     src_book = load_epub(src)
@@ -62,20 +69,40 @@ def _do_merge(
 
     per_chapter_units = []
     for s, t in zip(src_chaps[:pair_count], tgt_chaps[:pair_count]):
-        # Extract paragraphs, filtering out empties and boilerplate-only nodes.
-        s_paras = [p for p in paragraphs_from_xhtml(s.html) if p and p.strip()]
-        t_paras = [p for p in paragraphs_from_xhtml(t.html) if p and p.strip()]
+        if granularity == "sentence":
+            # Extract sentences directly from chapter HTML
+            s_units = [
+                unit for unit in sentences_from_xhtml(s.html) if unit and unit.strip()
+            ]
+            t_units = [
+                unit for unit in sentences_from_xhtml(t.html) if unit and unit.strip()
+            ]
 
-        if not s_paras or not t_paras:
-            typer.secho(
-                f"Warning: empty chapter content encountered (src='{getattr(s, 'title', 'N/A')}', "
-                f"tgt='{getattr(t, 'title', 'N/A')}'). Skipping chapter.",
-                fg=typer.colors.YELLOW,
-            )
-            continue
+            if not s_units or not t_units:
+                typer.secho(
+                    f"Warning: empty chapter content encountered (src='{getattr(s, 'title', 'N/A')}', "
+                    f"tgt='{getattr(t, 'title', 'N/A')}'). Skipping chapter.",
+                    fg=typer.colors.YELLOW,
+                )
+                continue
 
-        units = align_one_to_one(s_paras, t_paras)
-        per_chapter_units.append(units)
+            units = align_sentences_one_to_one(s_units, t_units)
+            per_chapter_units.append(units)
+        else:
+            # Default paragraph-level alignment
+            s_paras = [p for p in paragraphs_from_xhtml(s.html) if p and p.strip()]
+            t_paras = [p for p in paragraphs_from_xhtml(t.html) if p and p.strip()]
+
+            if not s_paras or not t_paras:
+                typer.secho(
+                    f"Warning: empty chapter content encountered (src='{getattr(s, 'title', 'N/A')}', "
+                    f"tgt='{getattr(t, 'title', 'N/A')}'). Skipping chapter.",
+                    fg=typer.colors.YELLOW,
+                )
+                continue
+
+            units = align_one_to_one(s_paras, t_paras)
+            per_chapter_units.append(units)
 
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     build_merged_epub(
@@ -103,12 +130,16 @@ def root(
     cover_strategy: str = typer.Option(
         "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
     ),
+    granularity: str = typer.Option(
+        "paragraph", help="Alignment granularity: 'paragraph' or 'sentence'"
+    ),
 ):
+    """ParallelText - Create bilingual parallel EPUBs."""
     if ctx.invoked_subcommand:
         return
     # If user provided options at root level, treat it as a merge invocation.
     if src and tgt:
-        _do_merge(src, tgt, out, chapters, cover_strategy)
+        _do_merge(src, tgt, out, chapters, cover_strategy, granularity)
     else:
         # No subcommand and not enough options → show help.
         raise typer.Exit(code=0)
@@ -126,6 +157,9 @@ def merge_cmd(
     cover_strategy: str = typer.Option(
         "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
     ),
+    granularity: str = typer.Option(
+        "sentence", help="Alignment granularity: 'paragraph' or 'sentence'"
+    ),
 ):
     """Merge the first N chapters from two minimal EPUBs into a single parallel EPUB."""
-    _do_merge(src, tgt, out, chapters, cover_strategy)
+    _do_merge(src, tgt, out, chapters, cover_strategy, granularity)

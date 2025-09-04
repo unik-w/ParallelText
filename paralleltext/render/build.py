@@ -239,12 +239,37 @@ def build_merged_epub(
         file_name="style/parallel.css",
         media_type="text/css",
         content=b"""
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; font-family: serif; }
 .pt-chapter { padding: 1.2rem 1rem; }
-.pt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.75rem; }
-.pt-src { line-height: 1.5; }
-.pt-tgt { line-height: 1.5; color: #666; }
-.pt-meta { font-size: 0.9em; color: #666; margin: 0.5rem 0 1rem; }
+.pt-row { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 1rem; 
+    margin-bottom: 0.6rem; 
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.pt-row:last-child { border-bottom: none; }
+.pt-src { 
+    line-height: 1.6; 
+    font-size: 1rem;
+}
+.pt-tgt { 
+    line-height: 1.6; 
+    color: #666; 
+    font-size: 1rem;
+    font-style: italic;
+}
+.pt-meta { 
+    font-size: 0.9em; 
+    color: #666; 
+    margin: 0.5rem 0 1rem; 
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 0.5rem;
+}
+/* Sentence-level specific styles */
+.pt-src p, .pt-tgt p { margin: 0; }
+.pt-src li, .pt-tgt li { margin: 0; }
 """,
     )
     out.add_item(css)
