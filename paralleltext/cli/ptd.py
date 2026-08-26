@@ -1,82 +1,131 @@
 import typer
 from pathlib import Path
 from typing import Optional
-import re
 
 from ..io.epub_read import load_epub
-from ..text.segment import paragraphs_from_xhtml
-from ..align.naive import align_one_to_one
+from ..text.segment import content_units_from_xhtml
+from ..text.classify import split_front_body_back
+from ..align import get_aligner
+from ..align.chapter_match import match_chapters
 from ..render.build import build_merged_epub
 
 cli = typer.Typer(add_completion=False, no_args_is_help=True)
 
-_SKIP_TITLE_PAT = re.compile(
-    r"(table of contents|contents|toc|nav|cover|title\s*page|impressum|"
-    r"inhaltsverzeichnis|copyright|license|licence|dedication|acknowledg)",
-    re.I,
-)
-_MIN_SUBSTANTIVE_PARAS = 3
-
-
-def _is_substantive(chapter) -> bool:
-    title = (getattr(chapter, "title", "") or "").strip()
-    if _SKIP_TITLE_PAT.search(title):
-        return False
-    # quick structural filter: need at least a handful of non-empty paragraphs
-    paras = [p for p in paragraphs_from_xhtml(chapter.html) if p and p.strip()]
-    return len(paras) >= _MIN_SUBSTANTIVE_PARAS
-
-
-def _substantive_chapters(book, limit: Optional[int]) -> list:
-    chs = [c for c in (book.chapters or []) if _is_substantive(c)]
-    if limit and limit > 0:
-        return chs[:limit]
-    return chs
-
 
 def _do_merge(
-    src: str, tgt: str, out: str, chapters: int, cover_strategy: str = "diagonal"
+    src: str,
+    tgt: str,
+    out: str,
+    chapters: int,
+    cover_strategy: str = "diagonal",
+    alignment_backend: str = "bertalign",
 ) -> None:
-    """Core implementation shared by root-callback and the 'merge' subcommand."""
+    """Core merge pipeline.
+
+    1. Load EPUBs (unfiltered)
+    2. Split each book into (front matter, body, back matter). Only leading/
+       trailing runs of weak chapters are treated as front/back matter — a
+       thin chapter sandwiched between two substantive ones stays in the body.
+    3. Match source ↔ target body chapters
+    4. For each matched pair: extract ContentUnits, run alignment
+    5. Build merged EPUB: source front matter (verbatim) + aligned body +
+       source back matter (verbatim)
+    """
+    typer.echo(f"Loading source EPUB: {src}")
     src_book = load_epub(src)
+    typer.echo(f"Loading target EPUB: {tgt}")
     tgt_book = load_epub(tgt)
 
-    # chapters==0 -> merge ALL substantive chapters
-    limit = chapters if chapters and chapters > 0 else None
-    src_chaps = _substantive_chapters(src_book, limit)
-    tgt_chaps = _substantive_chapters(tgt_book, limit)
+    typer.echo(
+        f"  Source: {len(src_book.chapters)} raw chapters, "
+        f"Target: {len(tgt_book.chapters)} raw chapters"
+    )
 
-    if not src_chaps or not tgt_chaps:
+    # Step 1: Split into front matter / body / back matter (boundary-only)
+    typer.echo("Splitting front/back matter (start & end only)...")
+    MIN_TEXT_UNITS = 30  # minimum text blocks to consider a chapter substantive
+    src_front, src_content, src_back = split_front_body_back(
+        src_book.chapters, min_text_units=MIN_TEXT_UNITS
+    )
+    _, tgt_content, _ = split_front_body_back(
+        tgt_book.chapters, min_text_units=MIN_TEXT_UNITS
+    )
+
+    typer.echo(
+        f"  Source: {len(src_front)} front, {len(src_content)} body, "
+        f"{len(src_back)} back matter chapters"
+    )
+    typer.echo(f"  Target body: {len(tgt_content)} chapters")
+
+    if not src_content or not tgt_content:
         raise typer.BadParameter(
             "No substantive chapters found in one or both EPUBs. "
-            "Verify fixtures were generated correctly."
+            "Verify the EPUBs contain actual book content."
         )
 
-    # If counts differ slightly, align up to the min to avoid truncation surprises.
-    pair_count = min(len(src_chaps), len(tgt_chaps))
-    if pair_count < (limit or float("inf")):
-        typer.secho(
-            f"Warning: requested {limit or 'all'} chapters but only {pair_count} pairs available; proceeding with {pair_count}.",
-            fg=typer.colors.YELLOW,
+    # Step 2: Match chapters across EPUBs
+    typer.echo("Matching chapters across EPUBs...")
+    use_embeddings = alignment_backend == "bertalign"
+    chapter_pairs = match_chapters(
+        src_content, tgt_content, use_embeddings=use_embeddings
+    )
+
+    # Keep only matched pairs (both sides present)
+    matched_pairs = [(s, t) for s, t in chapter_pairs if s is not None and t is not None]
+
+    if not matched_pairs:
+        raise typer.BadParameter(
+            "Could not match any chapters between source and target EPUBs."
         )
+
+    typer.echo(f"  Matched {len(matched_pairs)} chapter pairs")
+
+    # Apply chapter limit
+    limit = chapters if chapters and chapters > 0 else None
+    if limit:
+        matched_pairs = matched_pairs[:limit]
+        typer.echo(f"  Limited to {len(matched_pairs)} chapters")
+
+    # Step 3: Align each matched pair
+    aligner = get_aligner(alignment_backend)
+    typer.echo(f"Aligning with backend: {alignment_backend}")
 
     per_chapter_units = []
-    for s, t in zip(src_chaps[:pair_count], tgt_chaps[:pair_count]):
-        # Extract paragraphs, filtering out empties and boilerplate-only nodes.
-        s_paras = [p for p in paragraphs_from_xhtml(s.html) if p and p.strip()]
-        t_paras = [p for p in paragraphs_from_xhtml(t.html) if p and p.strip()]
+    chapter_titles = []
 
-        if not s_paras or not t_paras:
+    for i, (src_ch, tgt_ch) in enumerate(matched_pairs, start=1):
+        typer.echo(
+            f"  Chapter {i}: '{src_ch.title}' ↔ '{tgt_ch.title}'"
+        )
+
+        # Extract ContentUnits (preserving images and DOM order)
+        src_units = content_units_from_xhtml(src_ch.html)
+        tgt_units = content_units_from_xhtml(tgt_ch.html)
+
+        src_text_count = sum(1 for u in src_units if u.kind == "TEXT")
+        tgt_text_count = sum(1 for u in tgt_units if u.kind == "TEXT")
+        src_img_count = sum(1 for u in src_units if u.kind == "IMAGE")
+
+        if src_text_count == 0 or tgt_text_count == 0:
             typer.secho(
-                f"Warning: empty chapter content encountered (src='{getattr(s, 'title', 'N/A')}', "
-                f"tgt='{getattr(t, 'title', 'N/A')}'). Skipping chapter.",
+                f"  Warning: empty chapter content, skipping.",
                 fg=typer.colors.YELLOW,
             )
             continue
 
-        units = align_one_to_one(s_paras, t_paras)
-        per_chapter_units.append(units)
+        typer.echo(
+            f"    src: {src_text_count} text + {src_img_count} images, "
+            f"tgt: {tgt_text_count} text"
+        )
 
+        units = aligner(src_units, tgt_units)
+        per_chapter_units.append(units)
+        chapter_titles.append(src_ch.title or tgt_ch.title or f"Chapter {i}")
+
+    if not per_chapter_units:
+        raise typer.BadParameter("No chapters could be aligned.")
+
+    # Step 4: Build merged EPUB
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     build_merged_epub(
         src_book,
@@ -86,6 +135,9 @@ def _do_merge(
         tgt_epub_path=tgt,
         src_epub_path=src,
         cover_strategy=cover_strategy,
+        chapter_titles=chapter_titles,
+        src_front_chapters=src_front,
+        src_back_chapters=src_back,
     )
     typer.echo(f"Wrote {out}")
 
@@ -103,12 +155,16 @@ def root(
     cover_strategy: str = typer.Option(
         "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
     ),
+    alignment_backend: str = typer.Option(
+        "bertalign",
+        help="Alignment backend: 'bertalign' (semantic, default) or 'naive' (1:1 zip)",
+    ),
 ):
     if ctx.invoked_subcommand:
         return
     # If user provided options at root level, treat it as a merge invocation.
     if src and tgt:
-        _do_merge(src, tgt, out, chapters, cover_strategy)
+        _do_merge(src, tgt, out, chapters, cover_strategy, alignment_backend)
     else:
         # No subcommand and not enough options → show help.
         raise typer.Exit(code=0)
@@ -126,6 +182,14 @@ def merge_cmd(
     cover_strategy: str = typer.Option(
         "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
     ),
+    alignment_backend: str = typer.Option(
+        "bertalign",
+        help="Alignment backend: 'bertalign' (semantic, default) or 'naive' (1:1 zip)",
+    ),
 ):
-    """Merge the first N chapters from two minimal EPUBs into a single parallel EPUB."""
-    _do_merge(src, tgt, out, chapters, cover_strategy)
+    """Merge chapters from two EPUBs into a single parallel EPUB."""
+    _do_merge(src, tgt, out, chapters, cover_strategy, alignment_backend)
+
+if __name__ == "__main__":
+    cli()
+
