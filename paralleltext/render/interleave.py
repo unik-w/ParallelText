@@ -7,6 +7,7 @@ paragraph it belongs to, styled smaller, italic and grey.
 """
 
 import re
+import uuid
 import zipfile
 from html.entities import name2codepoint
 from typing import Dict, Iterable
@@ -108,6 +109,12 @@ def write_interleaved_epub(
         opf_dir = opf.rsplit("/", 1)[0] + "/" if "/" in opf else ""
         replaced = {opf_dir + name: xhtml for name, xhtml in replaced_docs.items()}
 
+        # Give the new book its own identifier: readers key saved positions
+        # and caches on it, and must not confuse it with the source edition.
+        opf_text = zin.read(opf).decode("utf-8")
+        old_id = _unique_identifier(opf_text)
+        new_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"paralleltext:{old_id}"))
+
         with zipfile.ZipFile(out_path, "w") as zout:
             # The mimetype entry must come first and be stored uncompressed.
             zout.writestr(
@@ -121,14 +128,33 @@ def write_interleaved_epub(
                 data = zin.read(info.filename)
                 if info.filename in replaced:
                     data = replaced[info.filename].encode("utf-8")
-                elif info.filename == opf and title_suffix:
+                elif info.filename == opf:
                     text = data.decode("utf-8")
-                    text = re.sub(
-                        r"(<dc:title[^>]*>)(.*?)(</dc:title>)",
-                        lambda m: m.group(1) + m.group(2) + title_suffix + m.group(3),
-                        text,
-                        count=1,
-                        flags=re.S,
-                    )
+                    if title_suffix:
+                        text = re.sub(
+                            r"(<dc:title[^>]*>)(.*?)(</dc:title>)",
+                            lambda m: m.group(1) + m.group(2) + title_suffix + m.group(3),
+                            text,
+                            count=1,
+                            flags=re.S,
+                        )
+                    if old_id:
+                        text = text.replace(old_id, new_id)
                     data = text.encode("utf-8")
+                elif info.filename.endswith(".ncx") and old_id:
+                    data = data.decode("utf-8").replace(old_id, new_id).encode("utf-8")
                 zout.writestr(info.filename, data, compress_type=zipfile.ZIP_DEFLATED)
+
+
+def _unique_identifier(opf_text: str) -> str:
+    """Value of the OPF's unique-identifier element (without a urn:uuid: prefix)."""
+    m = re.search(r'unique-identifier="([^"]+)"', opf_text)
+    if not m:
+        return ""
+    el = re.search(
+        r'<dc:identifier[^>]*\bid="' + re.escape(m.group(1)) + r'"[^>]*>(.*?)</dc:identifier>',
+        opf_text,
+        flags=re.S,
+    )
+    value = el.group(1).strip() if el else ""
+    return value[len("urn:uuid:"):] if value.startswith("urn:uuid:") else value
