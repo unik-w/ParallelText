@@ -11,6 +11,7 @@ import uuid
 import zipfile
 from html.entities import name2codepoint
 from typing import Dict, Iterable
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -115,6 +116,8 @@ def write_interleaved_epub(
         old_id = _unique_identifier(opf_text)
         new_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"paralleltext:{old_id}"))
 
+        renames = _safe_names([i.filename for i in zin.infolist()])
+
         with zipfile.ZipFile(out_path, "w") as zout:
             # The mimetype entry must come first and be stored uncompressed.
             zout.writestr(
@@ -125,25 +128,73 @@ def write_interleaved_epub(
             for info in zin.infolist():
                 if info.filename == "mimetype":
                     continue
-                data = zin.read(info.filename)
-                if info.filename in replaced:
-                    data = replaced[info.filename].encode("utf-8")
-                elif info.filename == opf:
-                    text = data.decode("utf-8")
-                    if title_suffix:
-                        text = re.sub(
-                            r"(<dc:title[^>]*>)(.*?)(</dc:title>)",
-                            lambda m: m.group(1) + m.group(2) + title_suffix + m.group(3),
-                            text,
-                            count=1,
-                            flags=re.S,
-                        )
-                    if old_id:
-                        text = text.replace(old_id, new_id)
-                    data = text.encode("utf-8")
-                elif info.filename.endswith(".ncx") and old_id:
-                    data = data.decode("utf-8").replace(old_id, new_id).encode("utf-8")
-                zout.writestr(info.filename, data, compress_type=zipfile.ZIP_DEFLATED)
+                data = _entry_data(zin, info, replaced, opf, title_suffix, old_id, new_id)
+                if renames and info.filename.lower().endswith(_TEXT_EXTS):
+                    data = _apply_renames(data.decode("utf-8"), renames).encode("utf-8")
+                name = info.filename
+                folder, base = name.rsplit("/", 1) if "/" in name else ("", name)
+                if base in renames:
+                    name = (folder + "/" if folder else "") + renames[base]
+                zout.writestr(name, data, compress_type=zipfile.ZIP_DEFLATED)
+
+
+_TEXT_EXTS = (".opf", ".ncx", ".xhtml", ".html", ".htm", ".css", ".xml")
+_UNSAFE_RE = re.compile(r"[^A-Za-z0-9._-]")
+
+
+def _safe_names(paths) -> Dict[str, str]:
+    """Map file basenames containing spaces, commas etc. to safe ones.
+
+    Such names are stored percent-encoded in the OPF; some readers (Foliate's
+    foliate-js uses decodeURI, which leaves %2C alone) then fail to find the
+    files, so every page but the cover goes missing.
+    """
+    bases = {p.rsplit("/", 1)[-1] for p in paths if p and not p.endswith("/")}
+    taken = set(bases)
+    renames = {}
+    for base in sorted(bases):
+        if not _UNSAFE_RE.search(base) or base == "mimetype":
+            continue
+        new = _UNSAFE_RE.sub("_", base)
+        stem, dot, ext = new.rpartition(".")
+        k = 1
+        while new in taken:
+            new = f"{stem}_{k}{dot}{ext}" if dot else f"{new}_{k}"
+            k += 1
+        taken.add(new)
+        renames[base] = new
+    return renames
+
+
+def _apply_renames(text: str, renames: Dict[str, str]) -> str:
+    # Longest names first so one name that prefixes another is not half-replaced.
+    for old in sorted(renames, key=len, reverse=True):
+        new = renames[old]
+        text = text.replace(quote(old), new).replace(old, new)
+    return text
+
+
+def _entry_data(zin, info, replaced, opf, title_suffix, old_id, new_id) -> bytes:
+    """Bytes for one output entry: a replaced chapter, the patched OPF/NCX, or a copy."""
+    data = zin.read(info.filename)
+    if info.filename in replaced:
+        return replaced[info.filename].encode("utf-8")
+    if info.filename == opf:
+        text = data.decode("utf-8")
+        if title_suffix:
+            text = re.sub(
+                r"(<dc:title[^>]*>)(.*?)(</dc:title>)",
+                lambda m: m.group(1) + m.group(2) + title_suffix + m.group(3),
+                text,
+                count=1,
+                flags=re.S,
+            )
+        if old_id:
+            text = text.replace(old_id, new_id)
+        return text.encode("utf-8")
+    if info.filename.endswith(".ncx") and old_id:
+        return data.decode("utf-8").replace(old_id, new_id).encode("utf-8")
+    return data
 
 
 def _unique_identifier(opf_text: str) -> str:
