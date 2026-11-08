@@ -6,13 +6,15 @@ import re
 from ..io.epub_read import load_epub
 from ..text.segment import paragraphs_from_xhtml
 from ..align.naive import align_one_to_one
+from ..align.lengths import align_lengths, text_length
+from ..types import AlignmentUnit
 from ..render.build import build_merged_epub
 
 cli = typer.Typer(add_completion=False, no_args_is_help=True)
 
 _SKIP_TITLE_PAT = re.compile(
     r"(table of contents|contents|toc|nav|cover|title\s*page|impressum|"
-    r"inhaltsverzeichnis|copyright|license|licence|dedication|acknowledg)",
+    r"inhaltsverzeichnis|\binhalt\b|copyright|license|licence|dedication|acknowledg)",
     re.I,
 )
 _MIN_SUBSTANTIVE_PARAS = 3
@@ -34,8 +36,69 @@ def _substantive_chapters(book, limit: Optional[int]) -> list:
     return chs
 
 
+def _align_by_chapter_index(src_chaps, tgt_chaps) -> list:
+    """Pair chapters by position and zip their paragraphs (drops leftovers)."""
+    per_chapter_units = []
+    for s, t in zip(src_chaps, tgt_chaps):
+        # Extract paragraphs, filtering out empties and boilerplate-only nodes.
+        s_paras = [p for p in paragraphs_from_xhtml(s.html) if p and p.strip()]
+        t_paras = [p for p in paragraphs_from_xhtml(t.html) if p and p.strip()]
+
+        if not s_paras or not t_paras:
+            typer.secho(
+                f"Warning: empty chapter content encountered (src='{getattr(s, 'title', 'N/A')}', "
+                f"tgt='{getattr(t, 'title', 'N/A')}'). Skipping chapter.",
+                fg=typer.colors.YELLOW,
+            )
+            continue
+
+        units = align_one_to_one(s_paras, t_paras)
+        per_chapter_units.append(units)
+    return per_chapter_units
+
+
+def _paragraphs(chapter) -> list:
+    return [p for p in paragraphs_from_xhtml(chapter.html) if p and p.strip()]
+
+
+def _align_whole_book(src_chaps, tgt_chaps) -> list:
+    """Align all paragraphs of both books at once by text length.
+
+    Robust to the two editions splitting chapters into files differently, and
+    keeps every paragraph. Output chapters follow the source book's chapters.
+    """
+    src_paras, src_chap_idx = [], []
+    for ci, ch in enumerate(src_chaps):
+        for p in _paragraphs(ch):
+            src_paras.append(p)
+            src_chap_idx.append(ci)
+    tgt_paras = [p for ch in tgt_chaps for p in _paragraphs(ch)]
+
+    groups = align_lengths(
+        [text_length(p) for p in src_paras], [text_length(p) for p in tgt_paras]
+    )
+
+    chapters: dict = {}
+    current = 0
+    for s_idx, t_idx in groups:
+        if s_idx:
+            current = src_chap_idx[s_idx[0]]
+        chapters.setdefault(current, []).append(
+            AlignmentUnit(
+                src_html="".join(src_paras[k] for k in s_idx),
+                tgt_html="".join(tgt_paras[k] for k in t_idx),
+            )
+        )
+    return [chapters[k] for k in sorted(chapters)]
+
+
 def _do_merge(
-    src: str, tgt: str, out: str, chapters: int, cover_strategy: str = "diagonal"
+    src: str,
+    tgt: str,
+    out: str,
+    chapters: int,
+    cover_strategy: str = "diagonal",
+    align: str = "length",
 ) -> None:
     """Core implementation shared by root-callback and the 'merge' subcommand."""
     src_book = load_epub(src)
@@ -52,30 +115,19 @@ def _do_merge(
             "Verify fixtures were generated correctly."
         )
 
-    # If counts differ slightly, align up to the min to avoid truncation surprises.
-    pair_count = min(len(src_chaps), len(tgt_chaps))
-    if pair_count < (limit or float("inf")):
-        typer.secho(
-            f"Warning: requested {limit or 'all'} chapters but only {pair_count} pairs available; proceeding with {pair_count}.",
-            fg=typer.colors.YELLOW,
-        )
-
-    per_chapter_units = []
-    for s, t in zip(src_chaps[:pair_count], tgt_chaps[:pair_count]):
-        # Extract paragraphs, filtering out empties and boilerplate-only nodes.
-        s_paras = [p for p in paragraphs_from_xhtml(s.html) if p and p.strip()]
-        t_paras = [p for p in paragraphs_from_xhtml(t.html) if p and p.strip()]
-
-        if not s_paras or not t_paras:
+    if align == "length":
+        per_chapter_units = _align_whole_book(src_chaps, tgt_chaps)
+    else:
+        # If counts differ slightly, align up to the min to avoid truncation surprises.
+        pair_count = min(len(src_chaps), len(tgt_chaps))
+        if pair_count < (limit or float("inf")):
             typer.secho(
-                f"Warning: empty chapter content encountered (src='{getattr(s, 'title', 'N/A')}', "
-                f"tgt='{getattr(t, 'title', 'N/A')}'). Skipping chapter.",
+                f"Warning: requested {limit or 'all'} chapters but only {pair_count} pairs available; proceeding with {pair_count}.",
                 fg=typer.colors.YELLOW,
             )
-            continue
-
-        units = align_one_to_one(s_paras, t_paras)
-        per_chapter_units.append(units)
+        per_chapter_units = _align_by_chapter_index(
+            src_chaps[:pair_count], tgt_chaps[:pair_count]
+        )
 
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     build_merged_epub(
@@ -103,12 +155,16 @@ def root(
     cover_strategy: str = typer.Option(
         "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
     ),
+    align: str = typer.Option(
+        "length",
+        help="Alignment: 'length' (whole-book, by paragraph length) or 'naive' (zip by index)",
+    ),
 ):
     if ctx.invoked_subcommand:
         return
     # If user provided options at root level, treat it as a merge invocation.
     if src and tgt:
-        _do_merge(src, tgt, out, chapters, cover_strategy)
+        _do_merge(src, tgt, out, chapters, cover_strategy, align)
     else:
         # No subcommand and not enough options → show help.
         raise typer.Exit(code=0)
@@ -126,6 +182,10 @@ def merge_cmd(
     cover_strategy: str = typer.Option(
         "diagonal", help="Cover generation strategy: 'diagonal' or 'side_by_side'"
     ),
+    align: str = typer.Option(
+        "length",
+        help="Alignment: 'length' (whole-book, by paragraph length) or 'naive' (zip by index)",
+    ),
 ):
     """Merge the first N chapters from two minimal EPUBs into a single parallel EPUB."""
-    _do_merge(src, tgt, out, chapters, cover_strategy)
+    _do_merge(src, tgt, out, chapters, cover_strategy, align)

@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
 from typing import List
 
+_BLOCK_TAGS = ["p", "li", "div", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6"]
+
 
 def paragraphs_from_xhtml(xhtml: str) -> List[str]:
     """Return a list of paragraph-level HTML strings.
@@ -16,6 +18,21 @@ def paragraphs_from_xhtml(xhtml: str) -> List[str]:
     blocks = []
     for el in soup.find_all(["p", "li"]):
         blocks.append(str(el))
+
+    # Some converters (e.g. Calibre from MOBI) wrap each paragraph in a <div>
+    # instead of a <p>. Prefer leaf <div>s when they outnumber <p>/<li>.
+    leaf_divs = [
+        el
+        for el in soup.find_all("div")
+        if el.get_text(strip=True) and not el.find(_BLOCK_TAGS)
+    ]
+    if len(leaf_divs) > len(blocks):
+        leaf_ids = {id(el) for el in leaf_divs}
+        blocks = [
+            str(el)
+            for el in soup.find_all(["p", "li", "div"])
+            if el.name != "div" or id(el) in leaf_ids
+        ]
 
     # Fallback: if no <p> or <li>, split by double <br>
     if not blocks:
