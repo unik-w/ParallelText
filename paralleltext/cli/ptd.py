@@ -4,14 +4,13 @@ from typing import Optional
 import re
 
 from ..io.epub_read import load_epub
-from bs4 import BeautifulSoup
-
 from ..text.segment import paragraph_elements, paragraphs_from_xhtml
 from ..align.naive import align_one_to_one
 from ..align.lengths import align_lengths, plain_text
 from ..render.build import build_merged_epub
 from ..render.interleave import (
     add_translation_style,
+    read_source_docs,
     translation_block,
     write_interleaved_epub,
 )
@@ -99,7 +98,7 @@ def _name_anchors(src_texts, tgt_texts):
     )
 
 
-def _interleave_whole_book(src_chaps, tgt_chaps, tgt_lang: str) -> dict:
+def _interleave_whole_book(src_path, src_chaps, tgt_chaps, tgt_lang: str) -> dict:
     """Align all paragraphs of both books at once and insert the translations.
 
     Alignment runs over the whole book, so it is robust to the two editions
@@ -108,7 +107,8 @@ def _interleave_whole_book(src_chaps, tgt_chaps, tgt_lang: str) -> dict:
     XHTML; translation text with no source counterpart is left out.
     Returns {chapter file name: new XHTML} for the chapters that changed.
     """
-    src_docs = [BeautifulSoup(ch.html, "xml") for ch in src_chaps]
+    raw_docs = read_source_docs(src_path, [ch.file_name for ch in src_chaps])
+    src_docs = [raw_docs[ch.file_name] for ch in src_chaps]
     src_elems, src_doc_idx = [], []
     for di, doc in enumerate(src_docs):
         for el in paragraph_elements(doc):
@@ -170,7 +170,7 @@ def _do_merge(
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     if align == "length":
         replaced = _interleave_whole_book(
-            src_chaps, tgt_chaps, tgt_book.language or "und"
+            src, src_chaps, tgt_chaps, tgt_book.language or "und"
         )
         lang_pair = "-".join(
             (b.language or "?").split("-")[0].upper() for b in (src_book, tgt_book)

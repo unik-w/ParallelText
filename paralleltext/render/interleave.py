@@ -8,7 +8,8 @@ paragraph it belongs to, styled smaller, italic and grey.
 
 import re
 import zipfile
-from typing import Dict
+from html.entities import name2codepoint
+from typing import Dict, Iterable
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -17,6 +18,44 @@ TRANSLATION_CSS = """
 .pt-tgt { font-style: italic; font-size: 0.9em; color: #555; margin: 0.2em 0 0.9em 0; }
 .pt-tgt p, .pt-tgt div { margin: 0; text-indent: 0; }
 """
+
+_XML_ENTITIES = {"amp", "lt", "gt", "quot", "apos"}
+_ENTITY_RE = re.compile(r"&([A-Za-z][A-Za-z0-9]*);")
+
+
+def _numeric_entities(xhtml: str) -> str:
+    """Turn HTML named entities (&nbsp; ...) into numeric references.
+
+    XHTML pages may rely on their DTD for these, which an XML parser does not
+    load, so they would otherwise be lost when the page is re-serialised.
+    """
+
+    def repl(m: "re.Match") -> str:
+        name = m.group(1)
+        if name in _XML_ENTITIES or name not in name2codepoint:
+            return m.group(0)
+        return f"&#{name2codepoint[name]};"
+
+    return _ENTITY_RE.sub(repl, xhtml)
+
+
+def read_source_docs(
+    src_epub_path: str, file_names: Iterable[str]
+) -> Dict[str, BeautifulSoup]:
+    """Parse chapter files exactly as stored in the EPUB.
+
+    ebooklib's item content for HTML documents is regenerated (the <head> with
+    the book's stylesheet links is dropped), so the raw zip entries are used.
+    file_names are relative to the OPF, as ebooklib reports them.
+    """
+    docs = {}
+    with zipfile.ZipFile(src_epub_path) as zf:
+        opf = _opf_path(zf)
+        opf_dir = opf.rsplit("/", 1)[0] + "/" if "/" in opf else ""
+        for name in file_names:
+            raw = zf.read(opf_dir + name).decode("utf-8", errors="replace")
+            docs[name] = BeautifulSoup(_numeric_entities(raw), "xml")
+    return docs
 
 
 def translation_block(doc: BeautifulSoup, tgt_html: str, lang: str) -> Tag:
