@@ -5,13 +5,18 @@ Aligns two paragraph sequences by the character length of their text, allowing
 no paragraph is dropped: every source and target paragraph ends up in exactly
 one alignment group. The DP is banded around the diagonal implied by the
 cumulative text length, so whole books align in reasonable time.
+
+Optionally each paragraph carries a set of anchor tokens (e.g. character names,
+spelled the same in both languages). Groups that share an anchor are rewarded
+and groups whose anchors all differ are penalised, which lets the aligner skip
+material present in only one edition instead of pairing it out of step.
 """
 
 import bisect
 import html as _html
 import math
 import re
-from typing import List, Tuple
+from typing import FrozenSet, List, Optional, Sequence, Tuple
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
@@ -29,24 +34,45 @@ _MOVES = {
 }
 _S2 = 6.8  # variance of the length ratio per character, from Gale & Church
 _BAND = 200
+_SKIP_BASE = 2.0  # extra cost of leaving a paragraph unmatched...
+_SKIP_PER_CHAR = 1 / 150  # ...growing gently with its length
+_ANCHOR_BONUS = 1.5  # both sides share an anchor
+_ANCHOR_PENALTY = 4.0  # both sides have anchors, none in common
+
+
+def plain_text(par_html: str) -> str:
+    text = _html.unescape(_TAG_RE.sub("", par_html))
+    return _WS_RE.sub(" ", text).strip()
 
 
 def text_length(par_html: str) -> int:
-    text = _html.unescape(_TAG_RE.sub("", par_html))
-    return len(_WS_RE.sub(" ", text).strip())
+    return len(plain_text(par_html))
 
 
 def _match_cost(l1: int, l2: int, ratio: float) -> float:
     if l1 == 0 and l2 == 0:
         return 0.0
+    if l1 == 0 or l2 == 0:
+        # Gale-Church would make long skips practically impossible; keep them
+        # affordable so text present in only one edition can be passed over.
+        return _SKIP_BASE + (l1 + l2 / ratio) * _SKIP_PER_CHAR
     mean = (l1 + l2 / ratio) / 2
     z = abs(ratio * l1 - l2) / math.sqrt(_S2 * mean)
     prob = math.erfc(z / math.sqrt(2))
     return -math.log(max(prob, 1e-300))
 
 
+def _anchor_cost(a: FrozenSet[str], b: FrozenSet[str]) -> float:
+    if not a or not b:
+        return 0.0
+    return -_ANCHOR_BONUS if a & b else _ANCHOR_PENALTY
+
+
 def align_lengths(
-    src_lens: List[int], tgt_lens: List[int]
+    src_lens: List[int],
+    tgt_lens: List[int],
+    src_anchors: Optional[Sequence[FrozenSet[str]]] = None,
+    tgt_anchors: Optional[Sequence[FrozenSet[str]]] = None,
 ) -> List[Tuple[List[int], List[int]]]:
     """Return alignment groups as (src indices, tgt indices), in order."""
     n, m = len(src_lens), len(tgt_lens)
@@ -73,6 +99,7 @@ def align_lengths(
         hi[i] = max(hi[i], lo[i + 1])
 
     moves = [(di, dj, -math.log(p)) for (di, dj), p in _MOVES.items()]
+    use_anchors = src_anchors is not None and tgt_anchors is not None
     inf = float("inf")
     cost: List[List[float]] = []
     back: List[bytearray] = []
@@ -100,6 +127,10 @@ def align_lengths(
                 if prev == inf:
                     continue
                 c = prev + prior + _match_cost(ps[i] - ps[pi], pt[j] - pt[pj], ratio)
+                if use_anchors and di and dj:
+                    a = src_anchors[i - 1] if di == 1 else frozenset().union(*src_anchors[pi:i])
+                    b = tgt_anchors[j - 1] if dj == 1 else frozenset().union(*tgt_anchors[pj:j])
+                    c += _anchor_cost(a, b)
                 if c < best:
                     best, best_k = c, k
             row[j - row_lo] = best

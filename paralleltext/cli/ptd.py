@@ -6,7 +6,7 @@ import re
 from ..io.epub_read import load_epub
 from ..text.segment import paragraphs_from_xhtml
 from ..align.naive import align_one_to_one
-from ..align.lengths import align_lengths, text_length
+from ..align.lengths import align_lengths, plain_text
 from ..types import AlignmentUnit
 from ..render.build import build_merged_epub
 
@@ -61,6 +61,38 @@ def _paragraphs(chapter) -> list:
     return [p for p in paragraphs_from_xhtml(chapter.html) if p and p.strip()]
 
 
+_WORD_RE = re.compile(r"[^\W\d_][\w'’-]*")
+
+
+def _name_anchors(src_texts, tgt_texts):
+    """Per-paragraph sets of words usable as cross-language anchors.
+
+    An anchor is a capitalised word found in both books that never occurs in
+    lowercase in either; in practice that leaves names (Paul, Arrakis, ...)
+    and drops German common nouns and sentence-initial words.
+    """
+
+    def words(texts):
+        per_para = [
+            [w.replace("’", "'") for w in _WORD_RE.findall(t)] for t in texts
+        ]
+        caps = {w for ws in per_para for w in ws if w[0].isupper()}
+        lower = {w.lower() for ws in per_para for w in ws if w[0].islower()}
+        return per_para, caps, lower
+
+    src_words, src_caps, src_lower = words(src_texts)
+    tgt_words, tgt_caps, tgt_lower = words(tgt_texts)
+    vocab = {
+        w
+        for w in src_caps & tgt_caps
+        if len(w) > 2 and w.lower() not in src_lower and w.lower() not in tgt_lower
+    }
+    return (
+        [frozenset(w for w in ws if w in vocab) for ws in src_words],
+        [frozenset(w for w in ws if w in vocab) for ws in tgt_words],
+    )
+
+
 def _align_whole_book(src_chaps, tgt_chaps) -> list:
     """Align all paragraphs of both books at once by text length.
 
@@ -74,8 +106,14 @@ def _align_whole_book(src_chaps, tgt_chaps) -> list:
             src_chap_idx.append(ci)
     tgt_paras = [p for ch in tgt_chaps for p in _paragraphs(ch)]
 
+    src_texts = [plain_text(p) for p in src_paras]
+    tgt_texts = [plain_text(p) for p in tgt_paras]
+    src_anchors, tgt_anchors = _name_anchors(src_texts, tgt_texts)
     groups = align_lengths(
-        [text_length(p) for p in src_paras], [text_length(p) for p in tgt_paras]
+        [len(t) for t in src_texts],
+        [len(t) for t in tgt_texts],
+        src_anchors,
+        tgt_anchors,
     )
 
     chapters: dict = {}
