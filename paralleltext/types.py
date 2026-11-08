@@ -6,6 +6,7 @@ from typing import List, Optional
 class Chapter:
     title: str
     html: str
+    file_name: str = ""  # path relative to the OPF
 
 
 @dataclass

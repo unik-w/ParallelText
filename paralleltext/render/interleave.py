@@ -1,0 +1,95 @@
+"""Write a parallel EPUB that keeps the source (e.g. German) book as it is.
+
+The source EPUB is copied file by file - its own pages, stylesheets, fonts,
+images, cover and table of contents - and only the chapters that received
+translations are replaced. Each translation sits right after the source
+paragraph it belongs to, styled smaller, italic and grey.
+"""
+
+import re
+import zipfile
+from typing import Dict
+
+from bs4 import BeautifulSoup
+from bs4.element import Tag
+
+TRANSLATION_CSS = """
+.pt-tgt { font-style: italic; font-size: 0.9em; color: #555; margin: 0.2em 0 0.9em 0; }
+.pt-tgt p, .pt-tgt div { margin: 0; text-indent: 0; }
+"""
+
+
+def translation_block(doc: BeautifulSoup, tgt_html: str, lang: str) -> Tag:
+    """Wrap translated paragraph(s) in a styled <div>, cleaned for the new book.
+
+    Images, links, ids and classes refer to the target EPUB's own files and
+    stylesheet, so they are dropped.
+    """
+    frag = BeautifulSoup(tgt_html, "html.parser")
+    for el in frag.find_all(["img", "image", "svg", "script", "style"]):
+        el.decompose()
+    for a in frag.find_all("a"):
+        a.unwrap()
+    for el in frag.find_all(True):
+        el.attrs.pop("id", None)
+        el.attrs.pop("class", None)
+    div = doc.new_tag("div", attrs={"class": "pt-tgt", "lang": lang})
+    for child in list(frag.contents):
+        div.append(child)
+    return div
+
+
+def add_translation_style(doc: BeautifulSoup) -> None:
+    head = doc.find("head")
+    if head is None:
+        return
+    style = doc.new_tag("style", attrs={"type": "text/css"})
+    style.string = TRANSLATION_CSS
+    head.append(style)
+
+
+def _opf_path(zf: zipfile.ZipFile) -> str:
+    container = zf.read("META-INF/container.xml").decode("utf-8")
+    return re.search(r'full-path="([^"]+)"', container).group(1)
+
+
+def write_interleaved_epub(
+    src_epub_path: str,
+    replaced_docs: Dict[str, str],
+    out_path: str,
+    title_suffix: str = "",
+) -> None:
+    """Copy the source EPUB, swapping in replaced chapter documents.
+
+    replaced_docs maps a chapter's path relative to the OPF (as ebooklib
+    reports it) to its new XHTML.
+    """
+    with zipfile.ZipFile(src_epub_path) as zin:
+        opf = _opf_path(zin)
+        opf_dir = opf.rsplit("/", 1)[0] + "/" if "/" in opf else ""
+        replaced = {opf_dir + name: xhtml for name, xhtml in replaced_docs.items()}
+
+        with zipfile.ZipFile(out_path, "w") as zout:
+            # The mimetype entry must come first and be stored uncompressed.
+            zout.writestr(
+                zipfile.ZipInfo("mimetype"),
+                zin.read("mimetype"),
+                compress_type=zipfile.ZIP_STORED,
+            )
+            for info in zin.infolist():
+                if info.filename == "mimetype":
+                    continue
+                data = zin.read(info.filename)
+                if info.filename in replaced:
+                    data = replaced[info.filename].encode("utf-8")
+                elif info.filename == opf and title_suffix:
+                    text = data.decode("utf-8")
+                    text = re.sub(
+                        r"(<dc:title[^>]*>)(.*?)(</dc:title>)",
+                        lambda m: m.group(1) + m.group(2) + title_suffix + m.group(3),
+                        text,
+                        count=1,
+                        flags=re.S,
+                    )
+                    data = text.encode("utf-8")
+                zout.writestr(info.filename, data, compress_type=zipfile.ZIP_DEFLATED)

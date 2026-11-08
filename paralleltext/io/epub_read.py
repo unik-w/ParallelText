@@ -67,6 +67,6 @@ def load_epub(path: str) -> Book:
         # Derive a chapter title
         h = soup.find(["h1", "h2", "h3"]) or soup.find("title")
         chap_title = h.get_text(strip=True) if h else "Chapter"
-        chapters.append(Chapter(title=chap_title, html=html))
+        chapters.append(Chapter(title=chap_title, html=html, file_name=item.file_name))
 
     return Book(language=lang or "", title=title, authors=authors, chapters=chapters)

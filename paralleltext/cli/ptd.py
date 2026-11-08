@@ -4,11 +4,17 @@ from typing import Optional
 import re
 
 from ..io.epub_read import load_epub
-from ..text.segment import paragraphs_from_xhtml
+from bs4 import BeautifulSoup
+
+from ..text.segment import paragraph_elements, paragraphs_from_xhtml
 from ..align.naive import align_one_to_one
 from ..align.lengths import align_lengths, plain_text
-from ..types import AlignmentUnit
 from ..render.build import build_merged_epub
+from ..render.interleave import (
+    add_translation_style,
+    translation_block,
+    write_interleaved_epub,
+)
 
 cli = typer.Typer(add_completion=False, no_args_is_help=True)
 
@@ -93,20 +99,25 @@ def _name_anchors(src_texts, tgt_texts):
     )
 
 
-def _align_whole_book(src_chaps, tgt_chaps) -> list:
-    """Align all paragraphs of both books at once by text length.
+def _interleave_whole_book(src_chaps, tgt_chaps, tgt_lang: str) -> dict:
+    """Align all paragraphs of both books at once and insert the translations.
 
-    Robust to the two editions splitting chapters into files differently, and
-    keeps every paragraph. Output chapters follow the source book's chapters.
+    Alignment runs over the whole book, so it is robust to the two editions
+    splitting chapters into files differently. Each matched translation is
+    inserted right after its source paragraph, inside the source chapter's own
+    XHTML; translation text with no source counterpart is left out.
+    Returns {chapter file name: new XHTML} for the chapters that changed.
     """
-    src_paras, src_chap_idx = [], []
-    for ci, ch in enumerate(src_chaps):
-        for p in _paragraphs(ch):
-            src_paras.append(p)
-            src_chap_idx.append(ci)
+    src_docs = [BeautifulSoup(ch.html, "xml") for ch in src_chaps]
+    src_elems, src_doc_idx = [], []
+    for di, doc in enumerate(src_docs):
+        for el in paragraph_elements(doc):
+            if el.get_text(strip=True):
+                src_elems.append(el)
+                src_doc_idx.append(di)
     tgt_paras = [p for ch in tgt_chaps for p in _paragraphs(ch)]
 
-    src_texts = [plain_text(p) for p in src_paras]
+    src_texts = [plain_text(str(el)) for el in src_elems]
     tgt_texts = [plain_text(p) for p in tgt_paras]
     src_anchors, tgt_anchors = _name_anchors(src_texts, tgt_texts)
     groups = align_lengths(
@@ -116,18 +127,21 @@ def _align_whole_book(src_chaps, tgt_chaps) -> list:
         tgt_anchors,
     )
 
-    chapters: dict = {}
-    current = 0
+    changed = set()
     for s_idx, t_idx in groups:
-        if s_idx:
-            current = src_chap_idx[s_idx[0]]
-        chapters.setdefault(current, []).append(
-            AlignmentUnit(
-                src_html="".join(src_paras[k] for k in s_idx),
-                tgt_html="".join(tgt_paras[k] for k in t_idx),
-            )
-        )
-    return [chapters[k] for k in sorted(chapters)]
+        tgt_html = "".join(tgt_paras[k] for k in t_idx if tgt_texts[k])
+        if not s_idx or not tgt_html:
+            continue
+        last = src_elems[s_idx[-1]]
+        doc = src_docs[src_doc_idx[s_idx[-1]]]
+        last.insert_after(translation_block(doc, tgt_html, tgt_lang))
+        changed.add(src_doc_idx[s_idx[-1]])
+
+    out = {}
+    for di in changed:
+        add_translation_style(src_docs[di])
+        out[src_chaps[di].file_name] = str(src_docs[di])
+    return out
 
 
 def _do_merge(
@@ -153,8 +167,17 @@ def _do_merge(
             "Verify fixtures were generated correctly."
         )
 
+    Path(out).parent.mkdir(parents=True, exist_ok=True)
     if align == "length":
-        per_chapter_units = _align_whole_book(src_chaps, tgt_chaps)
+        replaced = _interleave_whole_book(
+            src_chaps, tgt_chaps, tgt_book.language or "und"
+        )
+        lang_pair = "-".join(
+            (b.language or "?").split("-")[0].upper() for b in (src_book, tgt_book)
+        )
+        write_interleaved_epub(src, replaced, out, title_suffix=f" ({lang_pair})")
+        typer.echo(f"Wrote {out}")
+        return
     else:
         # If counts differ slightly, align up to the min to avoid truncation surprises.
         pair_count = min(len(src_chaps), len(tgt_chaps))
@@ -167,7 +190,6 @@ def _do_merge(
             src_chaps[:pair_count], tgt_chaps[:pair_count]
         )
 
-    Path(out).parent.mkdir(parents=True, exist_ok=True)
     build_merged_epub(
         src_book,
         tgt_book,
